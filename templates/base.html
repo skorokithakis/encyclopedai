@@ -6,9 +6,63 @@
     <title>{% block title %}{% endblock %} - {{ request.site.name }}</title>
 
     <link href="{% static "css/main.css" %}" rel="stylesheet">
+    <script>
+        window.__mathjaxTypesetQueue = [];
+        window.__mathjaxIsReady = false;
+        window.requestMathTypeset = function(element) {
+            const target = element || null;
+            if (window.__mathjaxIsReady && window.MathJax && MathJax.typesetPromise) {
+                const renderPromise = target
+                    ? MathJax.typesetPromise([target])
+                    : MathJax.typesetPromise();
+                renderPromise.catch(function(error) {
+                    console.error("MathJax rendering failed", error);
+                });
+                return;
+            }
+            window.__mathjaxTypesetQueue.push(target);
+        };
+
+        window.MathJax = {
+            tex: {
+                inlineMath: [["$", "$"], ["\\(", "\\)"]],
+                displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+                processEscapes: true,
+            },
+            startup: {
+                typeset: false,
+                ready: () => {
+                    MathJax.startup.defaultReady();
+                    window.__mathjaxIsReady = true;
+                    const pendingTargets = window.__mathjaxTypesetQueue || [];
+                    window.__mathjaxTypesetQueue = [];
+                    const initialRender = MathJax.typesetPromise();
+                    const followUpRender = () =>
+                        Promise.all(
+                            pendingTargets
+                                .filter(Boolean)
+                                .map((target) => MathJax.typesetPromise([target]))
+                        );
+                    initialRender
+                        .then(followUpRender)
+                        .catch((error) => {
+                            console.error("MathJax rendering failed", error);
+                        });
+                },
+            },
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/4.0.0/tex-mml-chtml.min.js" integrity="sha512-yxTB34XQUKlyuz73upeDrZ91/tbZW/YAURVWL3s+09bEWdmORQzUZwSKyBIRxSeHuSwh1aOKEffn2/D65kwyYg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     {% block content %}
     {% endblock %}
+    <script>
+        (function() {
+            if (typeof window.requestMathTypeset === "function") {
+                window.requestMathTypeset(document.body);
+            }
+        })();
+    </script>
 </body>
 </html>

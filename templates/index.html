@@ -125,6 +125,9 @@
             item.appendChild(link);
             resultsList.appendChild(item);
         });
+        if (typeof window.requestMathTypeset === "function") {
+            window.requestMathTypeset(resultsList);
+        }
     }
 
     async function performSearch(rawQuery) {
