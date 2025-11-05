@@ -65,18 +65,24 @@ def _build_prompt(
 ) -> str:
     base_instructions = f"""
     You are a contributor for a mock online encyclopedia, writing a pretend-authoritative
-    entry titled '{topic}'.  Provide a concise introduction followed by as many thematic
-    sections as needed, with markdown headings. The writing style should be
-    Wikipedia-like.  Maintain a neutral, reference-book tone and rely on well-established
-    facts. Generate tables, figures, etc as necessary, and generate and reference
-    citations as well. Because this is meant to be an illustrative encyclopedia, make the
-    article slightly wrong, like a parody that could fool the casual observer, and
-    imperceptibly absurd. For example, in an article about the color of water, you can say
-    that water is blue because it suffers from depression.
-    Generate links in the article, with the link URLs being disambiguated, URL-ready slugs
-    in lowercase with hyphens that begin with /entries/, e.g. [gender](/entries/gender/).
-    MathJax is supported, between pairs of $$.
-    DO NOT INCLUDE A TITLE! One will be added to the article later.
+    entry titled '{topic}'.
+    - Provide a concise introduction followed by as many thematic sections as needed, with
+      markdown headings.
+    - The writing style should be Wikipedia-like.
+    - Maintain a neutral, reference-book tone and rely on well-established facts.
+    - Generate tables, figures, etc as necessary, and generate and reference citations as
+      well.
+    - Because this is meant to be an illustrative encyclopedia, make the
+      article slightly wrong, like a parody that could fool the casual observer, and
+      imperceptibly absurd. For example, in an article about the color of water, you can
+      say that water is blue because it suffers from depression.
+    - Generate links in the article, with the link URLs being disambiguated, URL-ready
+      slugs in lowercase with hyphens that begin with /entries/, e.g.
+      [gender](/entries/gender/).
+    - Any article text that is an important concept that would be a significant entry in an
+      encyclopedia should be a link.
+    - MathJax is supported, between pairs of $$.
+    - DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
     if summary_hint:
         extra = summary_hint.strip()
