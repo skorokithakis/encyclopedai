@@ -339,6 +339,119 @@ body {
     text-decoration: underline;
 }
 
+/* Table Styling - Encyclopedia Style */
+.article__body table {
+    margin: 1rem 0 1.5rem 0;
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+    background: #f8f9fa;
+    border: 1px solid #a2a9b1;
+    font-family: sans-serif;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.article__body table caption {
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    font-style: italic;
+    color: #202122;
+    text-align: center;
+    font-family: Georgia, "Times New Roman", Times, serif;
+    padding: 0.25rem 0;
+}
+
+.article__body thead {
+    background: #e8ecf0;
+    border-bottom: 2px solid #a2a9b1;
+}
+
+.article__body th {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font-weight: 600;
+    color: #000000;
+    background: #e8ecf0;
+    border: 1px solid #a2a9b1;
+    vertical-align: middle;
+}
+
+.article__body th[align="center"],
+.article__body td[align="center"] {
+    text-align: center;
+}
+
+.article__body th[align="right"],
+.article__body td[align="right"] {
+    text-align: right;
+}
+
+.article__body tbody tr {
+    background: #ffffff;
+    transition: background-color 0.15s ease;
+}
+
+.article__body tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.article__body tbody tr:hover {
+    background: #eaecf0;
+}
+
+.article__body td {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #a2a9b1;
+    color: #202122;
+    vertical-align: top;
+}
+
+/* Numeric data alignment */
+.article__body td:first-child {
+    font-weight: normal;
+}
+
+/* Responsive table wrapper for mobile */
+@media (max-width: 640px) {
+    .article__body table {
+        font-size: 0.85rem;
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .article__body th,
+    .article__body td {
+        padding: 0.4rem 0.6rem;
+        min-width: 80px;
+    }
+}
+
+/* Table variants - for special table types */
+.article__body table.wikitable {
+    border: 1px solid #a2a9b1;
+}
+
+.article__body table.sortable th {
+    cursor: pointer;
+    position: relative;
+    padding-right: 1.5rem;
+}
+
+/* Styling for tables with header columns (not just header rows) */
+.article__body tbody th {
+    background: #eaecf0;
+    font-weight: 600;
+    text-align: left;
+}
+
+/* Center-aligned content in tables */
+.article__body table.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .sidebar {
     flex: 0 0 250px;
     font-size: 0.85rem;
