@@ -83,4 +83,14 @@
         </aside>
     </div>
 </main>
+
+<script>
+    // Remove URL parameters after article has loaded
+    if (window.location.search) {
+        const cleanUrl = window.location.protocol + "//" +
+                        window.location.host +
+                        window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+    }
+</script>
 {% endblock %}
