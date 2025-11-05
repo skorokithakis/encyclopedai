@@ -538,11 +538,26 @@ body {
     font-size: 0.85rem;
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .admin-actions__button:hover {
     background: #e8eaed;
     border-color: #72777d;
+}
+
+.admin-actions__button--admin {
+    background: #fff8e6;
+    border-color: #d4af37;
+    color: #856d1f;
+}
+
+.admin-actions__button--admin:hover {
+    background: #ffefc2;
+    border-color: #b8941f;
 }
 
 .admin-actions__button--regenerate {

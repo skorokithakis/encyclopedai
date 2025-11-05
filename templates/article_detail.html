@@ -66,9 +66,11 @@
             {% if user.is_staff %}
             <section class="admin-actions">
                 <h3 class="admin-actions__title">{% trans "Admin Actions" %}</h3>
-                <a href="{% url 'admin:main_article_change' article.pk %}" class="admin-actions__button admin-actions__button--admin">
-                    {% trans "View in Admin" %}
-                </a>
+                <div class="admin-actions__form">
+                    <a href="{% url 'admin:main_article_change' article.pk %}" class="admin-actions__button admin-actions__button--admin">
+                        {% trans "View in Admin" %}
+                    </a>
+                </div>
                 <form method="post" action="{% url 'main:article-regenerate' article.slug %}" class="admin-actions__form">
                     {% csrf_token %}
                     <button type="submit" class="admin-actions__button admin-actions__button--regenerate">
