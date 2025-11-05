@@ -44,6 +44,17 @@ class ArticleCreationInProgress(Exception):
         self.title = title
 
 
+class DailyArticleLimitExceeded(Exception):
+    """
+    Raised when the daily article creation limit has been reached.
+    """
+
+    def __init__(self):
+        super().__init__(
+            "We're sorry, our archivists are currently off the clock. Please come back tomorrow."
+        )
+
+
 def _acquire_article_creation_lock(slug: str, title: str) -> str:
     """
     Acquire a short-lived lock for article generation.
@@ -399,6 +410,13 @@ def get_or_create_article(
             existing.summary_snippet = cleaned_summary
             existing.save(update_fields=["summary_snippet"])
         return existing, False
+
+    # Check if the daily article creation limit has been reached.
+    articles_created_today = Article.objects.filter(
+        created_at__date=timezone.now().date()
+    ).count()
+    if articles_created_today >= settings.DAILY_ARTICLE_LIMIT:
+        raise DailyArticleLimitExceeded()
 
     lock_token = _acquire_article_creation_lock(base_slug, cleaned_title)
     try:

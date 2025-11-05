@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/2.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
-
 import os
 import re
 from pathlib import Path
@@ -200,6 +199,9 @@ USE_TZ = True
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
 ANTHROPIC_MAX_TOKENS = int(os.getenv("ANTHROPIC_MAX_TOKENS", "10000"))
+
+# Daily article creation limit to control LLM API costs.
+DAILY_ARTICLE_LIMIT = int(os.getenv("DAILY_ARTICLE_LIMIT", "200"))
 
 SITE_ID = 1
 

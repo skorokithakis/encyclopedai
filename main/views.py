@@ -17,6 +17,7 @@ from .models import Article
 
 def index(request):
     query = request.GET.get("q", "").strip()
+    error_message = ""
     if query:
         try:
             article, _created = services.get_or_create_article(query)
@@ -28,6 +29,8 @@ def index(request):
             if params:
                 detail_url = f"{detail_url}?{urlencode(params)}"
             return redirect(detail_url)
+        except services.DailyArticleLimitExceeded as exc:
+            error_message = str(exc)
         except (ImproperlyConfigured, ValueError, RuntimeError):
             pass
         else:
@@ -40,6 +43,7 @@ def index(request):
         "csrf_token_value": get_token(request),
         "latest_articles": latest_articles,
         "random_articles": random_articles,
+        "error_message": error_message,
     }
     return render(request, "index.html", context)
 
@@ -75,6 +79,9 @@ def article_detail(request, slug: str):
             pending_notice = _(
                 "Another archivist is already transcribing that entry. The reading room will refresh when the volume is shelved."
             )
+        except services.DailyArticleLimitExceeded as exc:
+            error_message = str(exc)
+            status_code = 503
         except ImproperlyConfigured:
             error_message = _(
                 "Access to the archives is briefly suspended. Please try again in a moment."
@@ -212,6 +219,8 @@ def create_article_from_result(request):
             },
             status=202,
         )
+    except services.DailyArticleLimitExceeded as exc:
+        return JsonResponse({"error": str(exc)}, status=503)
     except ImproperlyConfigured:
         return JsonResponse(
             {
