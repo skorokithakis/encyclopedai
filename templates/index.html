@@ -54,6 +54,17 @@
         </ul>
     </section>
     {% endif %}
+
+    {% if random_articles %}
+    <section class="random-articles">
+        <h2 class="random-articles__title">{% trans "Random articles" %}</h2>
+        <div class="random-articles__links">
+            {% for article in random_articles %}
+                <a href="{% url 'main:article-detail' slug=article.slug %}">{{ article.title }}</a>{% if not forloop.last %} | {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
 </main>
 
 {% trans "Please tell us what you're looking for." as msg_empty_query %}
