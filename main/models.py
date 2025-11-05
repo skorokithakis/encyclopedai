@@ -96,3 +96,18 @@ class Article(models.Model):
                 slug_candidate = f"{base_slug}-{index}"
             self.slug = slug_candidate
         super().save(*args, **kwargs)
+
+
+class ArticleCreationLock(models.Model):
+    slug = models.SlugField(max_length=255, unique=True)
+    title = models.CharField(max_length=255)
+    token = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["slug"]
+
+    def __str__(self) -> str:
+        return f"Lock for {self.slug}"

@@ -2,20 +2,23 @@ import html
 import logging
 import re
 import string
+from datetime import timedelta
 from types import ModuleType
 from typing import Any
-from typing import cast
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import cast
 from urllib.parse import urlencode
 
 import shortuuid
 from anthropic import Anthropic
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.html import escape
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
@@ -23,8 +26,65 @@ from django.utils.text import slugify
 from django.utils.text import Truncator
 
 from .models import Article
+from .models import ArticleCreationLock
 
 logger = logging.getLogger(__name__)
+
+ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
+
+
+class ArticleCreationInProgress(Exception):
+    """
+    Raised when an article generation request is already in progress.
+    """
+
+    def __init__(self, slug: str, title: str):
+        super().__init__(f"Article creation in progress for {title} ({slug})")
+        self.slug = slug
+        self.title = title
+
+
+def _acquire_article_creation_lock(slug: str, title: str) -> str:
+    """
+    Acquire a short-lived lock for article generation.
+
+    Returns a token representing ownership of the lock.
+    """
+    now = timezone.now()
+    expiration = now + ARTICLE_CREATION_LOCK_TTL
+    token = shortuuid.uuid()
+
+    with transaction.atomic():
+        ArticleCreationLock.objects.filter(expires_at__lt=now).delete()
+        existing = (
+            ArticleCreationLock.objects.select_for_update()
+            .filter(slug=slug)
+            .first()
+        )
+        if existing and existing.expires_at > now:
+            raise ArticleCreationInProgress(existing.slug, existing.title)
+
+        if existing:
+            existing.title = title
+            existing.expires_at = expiration
+            existing.token = token
+            existing.save(update_fields=["title", "expires_at", "token"])
+        else:
+            ArticleCreationLock.objects.create(
+                slug=slug,
+                title=title,
+                token=token,
+                expires_at=expiration,
+            )
+
+    return token
+
+
+def _release_article_creation_lock(slug: str, token: str) -> None:
+    """
+    Release the previously acquired article generation lock.
+    """
+    ArticleCreationLock.objects.filter(slug=slug, token=token).delete()
 
 
 def strip_leading_heading(text: str) -> str:
@@ -73,7 +133,7 @@ def _build_prompt(
     - The writing style should be Wikipedia-like.
     - Maintain a neutral, reference-book tone and rely on well-established facts.
     - Generate tables, figures, etc as necessary, and generate and reference citations as
-      well.
+      well. Only generate tables when you need to.
     - Because this is meant to be an illustrative encyclopedia, make the
       article slightly wrong, like a parody that could fool the casual observer, and
       imperceptibly absurd. For example, in an article about the color of water, you can
@@ -342,25 +402,40 @@ def get_or_create_article(
             existing.save(update_fields=["summary_snippet"])
         return existing, False
 
-    summary_for_generation = cleaned_summary or None
-    link_briefings = _collect_incoming_link_briefings(base_slug)
-    content = generate_article_content(
-        cleaned_title,
-        summary_hint=summary_for_generation,
-        link_briefings=link_briefings,
-    )
-    article, created = Article.objects.get_or_create(
-        slug=base_slug,
-        defaults={
-            "title": cleaned_title,
-            "content": content,
-            "summary_snippet": cleaned_summary,
-        },
-    )
-    if not created and cleaned_summary and article.summary_snippet != cleaned_summary:
-        article.summary_snippet = cleaned_summary
-        article.save(update_fields=["summary_snippet"])
-    return article, created
+    lock_token = _acquire_article_creation_lock(base_slug, cleaned_title)
+    try:
+        existing = Article.objects.filter(slug=base_slug).first()
+        if existing:
+            if cleaned_summary and existing.summary_snippet != cleaned_summary:
+                existing.summary_snippet = cleaned_summary
+                existing.save(update_fields=["summary_snippet"])
+            return existing, False
+
+        summary_for_generation = cleaned_summary or None
+        link_briefings = _collect_incoming_link_briefings(base_slug)
+        content = generate_article_content(
+            cleaned_title,
+            summary_hint=summary_for_generation,
+            link_briefings=link_briefings,
+        )
+        article, created = Article.objects.get_or_create(
+            slug=base_slug,
+            defaults={
+                "title": cleaned_title,
+                "content": content,
+                "summary_snippet": cleaned_summary,
+            },
+        )
+        if (
+            not created
+            and cleaned_summary
+            and article.summary_snippet != cleaned_summary
+        ):
+            article.summary_snippet = cleaned_summary
+            article.save(update_fields=["summary_snippet"])
+        return article, created
+    finally:
+        _release_article_creation_lock(base_slug, lock_token)
 
 
 def humanize_slug(slug: str) -> str:

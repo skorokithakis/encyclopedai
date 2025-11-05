@@ -1,4 +1,5 @@
 import json
+from urllib.parse import urlencode
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ImproperlyConfigured
@@ -42,11 +43,19 @@ def article_detail(request, slug: str):
     link_briefings = services.get_incoming_link_briefings(slug)
 
     if fetch_requested:
+        pending_notice = ""
         try:
             article, _created = services.get_or_create_article(
                 title_hint or display_title,
                 summary_hint=snippet_hint or None,
                 slug_hint=slug,
+            )
+        except services.ArticleCreationInProgress as exc:
+            display_title = exc.title or display_title
+            error_message = ""
+            status_code = 202
+            pending_notice = _(
+                "Another archivist is already transcribing that entry. The reading room will refresh when the volume is shelved."
             )
         except ImproperlyConfigured:
             error_message = _(
@@ -94,6 +103,7 @@ def article_detail(request, slug: str):
             "pending_fetch_url": fetch_url,
             "pending_error": error_message,
             "pending_link_briefings": link_briefings,
+            "pending_notice": pending_notice,
         }
         return render(request, "article_pending.html", context, status=status_code)
 
@@ -106,6 +116,7 @@ def article_detail(request, slug: str):
         "pending_fetch_url": fetch_url,
         "pending_error": "",
         "pending_link_briefings": link_briefings,
+        "pending_notice": "",
     }
     return render(request, "article_pending.html", context, status=202)
 
@@ -167,6 +178,21 @@ def create_article_from_result(request):
         article, _created = services.get_or_create_article(
             title,
             summary_hint=snippet,
+        )
+    except services.ArticleCreationInProgress as exc:
+        query_params = {"title": title}
+        if snippet:
+            query_params["snippet"] = snippet
+        pending_url = reverse("main:article-detail", kwargs={"slug": exc.slug})
+        if query_params:
+            pending_url = f"{pending_url}?{urlencode(query_params)}"
+        return JsonResponse(
+            {
+                "pending": True,
+                "url": pending_url,
+                "slug": exc.slug,
+            },
+            status=202,
         )
     except ImproperlyConfigured:
         return JsonResponse(

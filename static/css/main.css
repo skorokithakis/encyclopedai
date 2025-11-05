@@ -744,6 +744,13 @@ body {
     margin-top: 1.5rem;
 }
 
+.article-pending__notice {
+    color: #202122;
+    font-size: 1rem;
+    font-family: sans-serif;
+    margin: 1.5rem 0 0 0;
+}
+
 .article-pending__spinner {
     margin-top: 2rem;
 }

@@ -1,9 +1,15 @@
+import json
+import uuid
+from datetime import timedelta
 from unittest import mock
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
+from . import services
 from .models import Article
+from .models import ArticleCreationLock
 
 
 @override_settings(
@@ -98,3 +104,100 @@ class ArticleDetailTests(TestCase):
         mock_generate_article_summary.assert_called_once_with(
             "New Entry", "# Heading\n\nDetails about the entry."
         )
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    },
+)
+class ArticleCreationLockingTests(TestCase):
+    def test_get_or_create_article_raises_when_lock_active(self):
+        ArticleCreationLock.objects.create(
+            slug="locked-entry",
+            title="Locked Entry",
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        with self.assertRaises(services.ArticleCreationInProgress):
+            services.get_or_create_article("Locked Entry", slug_hint="locked-entry")
+
+    @mock.patch(
+        "main.services.generate_article_content",
+        return_value="# Heading\n\nBody of the article.",
+    )
+    def test_get_or_create_article_handles_expired_lock(
+        self, mock_generate_article_content
+    ):
+        ArticleCreationLock.objects.create(
+            slug="stale-entry",
+            title="Old Title",
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() - timedelta(minutes=10),
+        )
+
+        article, created = services.get_or_create_article(
+            "Fresh Title", slug_hint="stale-entry"
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(article.slug, "stale-entry")
+        mock_generate_article_content.assert_called_once_with(
+            "Fresh Title",
+            summary_hint=None,
+            link_briefings=[],
+        )
+        self.assertFalse(
+            ArticleCreationLock.objects.filter(slug="stale-entry").exists()
+        )
+
+    def test_article_detail_fetch_waits_when_lock_active(self):
+        ArticleCreationLock.objects.create(
+            slug="waiting-entry",
+            title="Waiting Entry",
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        response = self.client.get(
+            reverse("main:article-detail", kwargs={"slug": "waiting-entry"}),
+            {"fetch": "1"},
+        )
+
+        self.assertEqual(response.status_code, 202)
+        self.assertTemplateUsed(response, "article_pending.html")
+        self.assertIn(
+            "pending_notice",
+            response.context,
+        )
+        self.assertTrue(response.context["pending_notice"])
+
+    def test_create_article_from_result_signals_pending_when_locked(self):
+        ArticleCreationLock.objects.create(
+            slug="search-entry",
+            title="Search Entry",
+            token=uuid.uuid4().hex,
+            expires_at=timezone.now() + timedelta(minutes=5),
+        )
+
+        response = self.client.post(
+            reverse("main:article-from-result"),
+            data=json.dumps(
+                {
+                    "title": "Search Entry",
+                    "snippet": "A summary from the search desk.",
+                }
+            ),
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 202)
+        payload = response.json()
+        self.assertTrue(payload.get("pending"))
+        self.assertIn("url", payload)
+        self.assertIn("search-entry", payload.get("url", ""))
