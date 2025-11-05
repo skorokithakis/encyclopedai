@@ -75,6 +75,7 @@ def _build_prompt(
     that water is blue because it suffers from depression.
     Generate links in the article, with the link URLs being disambiguated, URL-ready slugs
     in lowercase with hyphens that begin with /entries/.
+    MathJax is supported, between pairs of $$.
     DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
     if summary_hint:
