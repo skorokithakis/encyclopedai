@@ -1,0 +1,192 @@
+import json
+
+from django.core.exceptions import ImproperlyConfigured
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.urls import reverse
+from django.middleware.csrf import get_token
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
+
+from . import services
+from .models import Article
+
+
+def index(request):
+    query = request.GET.get("q", "").strip()
+    latest_articles = Article.objects.order_by("-created_at")[:4]
+    context = {
+        "query": query,
+        "csrf_token_value": get_token(request),
+        "latest_articles": latest_articles,
+    }
+    return render(request, "index.html", context)
+
+
+def article_detail(request, slug: str):
+    article = Article.objects.filter(slug=slug).first()
+    if article:
+        rendered_body = services.render_article_markdown(article.content)
+        context = {
+            "article": article,
+            "rendered_body": rendered_body,
+        }
+        return render(request, "article_detail.html", context)
+
+    fetch_requested = request.GET.get("fetch") == "1"
+    title_hint = (request.GET.get("title") or "").strip()
+    snippet_hint = (request.GET.get("snippet") or "").strip()
+    display_title = title_hint or services.humanize_slug(slug)
+
+    if fetch_requested:
+        try:
+            article, _created = services.get_or_create_article(
+                title_hint or display_title,
+                summary_hint=snippet_hint or None,
+                slug_hint=slug,
+            )
+        except ImproperlyConfigured:
+            error_message = _(
+                "Access to the archives is briefly suspended. Please try again in a moment."
+            )
+            status_code = 503
+        except ValueError:
+            error_message = _("That selection does not appear to be a valid entry.")
+            status_code = 400
+        except RuntimeError:
+            error_message = _(
+                "The archives declined to release that manuscript. Please choose another topic."
+            )
+            status_code = 503
+        else:
+            if _created:
+                try:
+                    summary_text = services.generate_article_summary(
+                        article.title, article.content
+                    )
+                except (ImproperlyConfigured, RuntimeError, ValueError):
+                    summary_text = ""
+                else:
+                    summary_text = summary_text.strip()
+                if (
+                    summary_text
+                    and summary_text != (article.summary_snippet or "").strip()
+                ):
+                    article.summary_snippet = summary_text
+                    article.save(update_fields=["summary_snippet"])
+            rendered_body = services.render_article_markdown(article.content)
+            context = {
+                "article": article,
+                "rendered_body": rendered_body,
+            }
+            return render(request, "article_detail.html", context)
+
+        pending_params = request.GET.copy()
+        pending_params.pop("fetch", None)
+        pending_params["fetch"] = "1"
+        fetch_url = f"{request.path}?{pending_params.urlencode()}"
+        context = {
+            "pending_title": display_title,
+            "pending_snippet": snippet_hint,
+            "pending_fetch_url": fetch_url,
+            "pending_error": error_message,
+        }
+        return render(request, "article_pending.html", context, status=status_code)
+
+    pending_params = request.GET.copy()
+    pending_params["fetch"] = "1"
+    fetch_url = f"{request.path}?{pending_params.urlencode()}"
+    context = {
+        "pending_title": display_title,
+        "pending_snippet": snippet_hint,
+        "pending_fetch_url": fetch_url,
+        "pending_error": "",
+    }
+    return render(request, "article_pending.html", context, status=202)
+
+
+@require_GET
+def search_catalogue(request):
+    query = request.GET.get("q", "").strip()
+    if not query:
+        return JsonResponse(
+            {"error": _("Please tell us what you're looking for."), "results": []},
+            status=400,
+        )
+
+    try:
+        results = services.generate_search_results(query)
+    except ImproperlyConfigured:
+        return JsonResponse(
+            {
+                "error": _(
+                    "The reference desk is calibrating its shelves. Kindly try again shortly."
+                ),
+                "results": [],
+            },
+            status=503,
+        )
+    except (RuntimeError, ValueError):
+        return JsonResponse(
+            {
+                "error": _(
+                    "We could not retrieve catalogue entries just now. Please try another topic."
+                ),
+                "results": [],
+            },
+            status=503,
+        )
+
+    return JsonResponse({"results": results})
+
+
+@require_POST
+def create_article_from_result(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {"error": _("We could not understand that selection.")},
+            status=400,
+        )
+
+    title = (payload.get("title") or "").strip()
+    snippet = (payload.get("snippet") or "").strip()
+    if not title or not snippet:
+        return JsonResponse(
+            {"error": _("A valid entry requires both a title and a summary snippet.")},
+            status=400,
+        )
+
+    try:
+        article, _created = services.get_or_create_article(
+            title,
+            summary_hint=snippet,
+        )
+    except ImproperlyConfigured:
+        return JsonResponse(
+            {
+                "error": _(
+                    "Access to the archives is briefly suspended. Please try again in a moment."
+                )
+            },
+            status=503,
+        )
+    except ValueError:
+        return JsonResponse(
+            {"error": _("That selection does not appear to be a valid entry.")},
+            status=400,
+        )
+    except RuntimeError:
+        return JsonResponse(
+            {
+                "error": _(
+                    "The archives declined to release that manuscript. Please choose another result."
+                )
+            },
+            status=503,
+        )
+
+    detail_url = reverse("main:article-detail", kwargs={"slug": article.slug})
+    return JsonResponse({"url": detail_url})

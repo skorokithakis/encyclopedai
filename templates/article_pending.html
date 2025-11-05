@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}{{ pending_title }}{% endblock %}
+
+{% block content %}
+    <main class="page-container">
+        <header class="page-header">
+            <a href="{% url 'main:index' %}" class="page-header__home">
+                <strong>EncyclopedAI</strong>
+            </a>
+
+            <nav class="page-header__nav">
+                <a href="{% url 'main:index' %}" class="page-header__nav-link">
+                    {% trans "Main page" %}
+                </a>
+            </nav>
+        </header>
+
+        <section class="article-pending" role="status" aria-live="polite">
+            <h1 class="article-pending__title">
+                {% blocktrans with title=pending_title %}Retrieving "{{ title }}" from the archives{% endblocktrans %}
+            </h1>
+
+            {% if pending_snippet %}
+                <p class="article-pending__snippet">{{ pending_snippet }}</p>
+            {% endif %}
+
+            {% if pending_error %}
+                <p class="article-pending__error">{{ pending_error }}</p>
+
+                <p class="article-pending__actions">
+                    <a class="search-results__link" href="{{ pending_fetch_url }}">
+                        {% trans "Try fetching again" %}
+                    </a>
+                </p>
+            {% else %}
+                <div class="search-spinner search-spinner--visible article-pending__spinner" aria-hidden="true">
+                    <div class="search-spinner__icon"></div>
+                    <p class="search-spinner__label">{% trans "Consulting the archives." %}</p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+
+    {% if not pending_error %}
+        <script>
+            (function() {
+                var url = "{{ pending_fetch_url|escapejs }}";
+                window.setTimeout(function() {
+                    window.location.replace(url);
+                }, 400);
+            })();
+        </script>
+    {% endif %}
+{% endblock %}

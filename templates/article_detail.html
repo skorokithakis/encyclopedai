@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<main class="page-container">
+    <header class="page-header">
+        <a href="{% url 'main:index' %}" class="page-header__home">
+            <strong>EncyclopedAI</strong>
+        </a>
+        <nav class="page-header__nav">
+            <a href="{% url 'main:index' %}" class="page-header__nav-link">
+                {% trans "Main page" %}
+            </a>
+        </nav>
+    </header>
+
+    <div class="page-columns">
+        <article class="article article--wikipedia">
+            <header class="article__header">
+                <h1 class="article__title">{{ article.title }}</h1>
+                <p class="article__tagline">
+                    {% trans "From EncyclopedAI, the free encyclopedia" %}
+                </p>
+            </header>
+
+            <div class="article__body">
+                {{ rendered_body|safe }}
+            </div>
+        </article>
+
+        <aside class="sidebar">
+            <section class="infobox">
+                <h2 class="infobox__title">{{ article.title }}</h2>
+                <dl class="infobox__list">
+                    <dt>{% trans "First published" %}</dt>
+                    <dd>{{ article.created_at|date:"F j, Y" }}</dd>
+                    <dt>{% trans "Last revised" %}</dt>
+                    <dd>{{ article.updated_at|date:"F j, Y" }}</dd>
+                </dl>
+            </section>
+        </aside>
+    </div>
+</main>
+{% endblock %}

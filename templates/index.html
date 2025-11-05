@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+{% load markdown_filters %}
+
+{% block title %}{% trans "EncyclopedAI" %}{% endblock %}
+
+{% block content %}
+<main class="layout">
+    <section class="hero">
+        <h1 class="hero__title">{% trans "EncyclopedAI" %}</h1>
+        <p class="hero__subtitle">{% trans "Everything about everything." %}</p>
+        <form
+            id="search-form"
+            class="search-form"
+            role="search"
+            data-search-endpoint="{% url 'main:search' %}"
+            data-csrf-token="{{ csrf_token_value }}"
+        >
+            <label for="query" class="visually-hidden">{% trans "Search for an article" %}</label>
+            <input
+                id="query"
+                name="q"
+                type="search"
+                value="{{ query }}"
+                placeholder="{% trans "Try 'Solar system'" %}"
+                required
+                class="search-form__input"
+            >
+            <button type="submit" class="search-form__button">{% trans "Search" %}</button>
+        </form>
+        <div id="search-feedback" class="search-feedback" role="status" aria-live="polite"></div>
+        <div id="search-spinner" class="search-spinner" aria-hidden="true">
+            <div class="search-spinner__icon" aria-hidden="true"></div>
+            <span class="search-spinner__label">{% trans "Consulting the archives..." %}</span>
+        </div>
+        <ul id="search-results" class="search-results" aria-live="polite"></ul>
+    </section>
+
+    {% if latest_articles %}
+    <section class="articles-of-interest">
+        <h2 class="articles-of-interest__title">{% trans "Articles of interest" %}</h2>
+        <ul class="articles-of-interest__list">
+            {% for article in latest_articles %}
+            <li class="articles-of-interest__item">
+                <a href="{% url 'main:article-detail' slug=article.slug %}" class="articles-of-interest__link">
+                    <h3 class="articles-of-interest__article-title">{{ article.title }}</h3>
+                    {% if article.content_preview %}
+                    <div class="articles-of-interest__snippet">{{ article.content_preview|render_markdown|safe }}</div>
+                    {% endif %}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+</main>
+
+{% trans "Please tell us what you're looking for." as msg_empty_query %}
+{% trans "No catalogue entries were located. Please try a different phrasing." as msg_no_entries %}
+{% trans "Select an entry to open the full article." as msg_select_entry %}
+{% trans "The reference desk encountered an issue. Please try again shortly." as msg_search_error %}
+
+<script>
+(function() {
+    const form = document.getElementById("search-form");
+    const queryInput = document.getElementById("query");
+    const spinner = document.getElementById("search-spinner");
+    const feedback = document.getElementById("search-feedback");
+    const resultsList = document.getElementById("search-results");
+    if (!form || !spinner || !queryInput || !feedback || !resultsList) {
+        return;
+    }
+
+    const searchEndpoint = form.dataset.searchEndpoint;
+    const messages = {
+        emptyQuery: "{{ msg_empty_query|escapejs }}",
+        noEntries: "{{ msg_no_entries|escapejs }}",
+        selectEntry: "{{ msg_select_entry|escapejs }}",
+        searchError: "{{ msg_search_error|escapejs }}",
+    };
+
+    function toggleSpinner(isVisible) {
+        if (isVisible) {
+            spinner.classList.add("search-spinner--visible");
+            spinner.setAttribute("aria-hidden", "false");
+            return;
+        }
+        spinner.classList.remove("search-spinner--visible");
+        spinner.setAttribute("aria-hidden", "true");
+    }
+
+    function setFeedback(message, isError) {
+        feedback.textContent = message || "";
+        feedback.classList.toggle("search-feedback--error", Boolean(isError));
+    }
+
+    function clearResults() {
+        resultsList.innerHTML = "";
+    }
+
+    function renderResults(results) {
+        clearResults();
+        results.forEach(function(result) {
+            const item = document.createElement("li");
+            item.className = "search-results__item";
+
+            const link = document.createElement("a");
+            link.className = "search-results__link";
+            link.href = result.entry_url || "#";
+            link.rel = "bookmark";
+            link.dataset.entrySlug = result.slug || "";
+
+            const title = document.createElement("span");
+            title.className = "search-results__title";
+            title.textContent = result.title;
+
+            const snippet = document.createElement("span");
+            snippet.className = "search-results__snippet";
+            snippet.innerHTML = result.snippet;
+
+            link.appendChild(title);
+            link.appendChild(snippet);
+
+            item.appendChild(link);
+            resultsList.appendChild(item);
+        });
+    }
+
+    async function performSearch(rawQuery) {
+        const query = rawQuery.trim();
+        if (!query) {
+            setFeedback(messages.emptyQuery, true);
+            clearResults();
+            return;
+        }
+
+        toggleSpinner(true);
+        setFeedback("");
+        clearResults();
+
+        try {
+            const response = await fetch(`${searchEndpoint}?q=${encodeURIComponent(query)}`, {
+                headers: {
+                    "Accept": "application/json",
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error("Bad response");
+            }
+
+            const payload = await response.json();
+            if (payload.error) {
+                setFeedback(payload.error, true);
+                return;
+            }
+
+            if (!Array.isArray(payload.results) || payload.results.length === 0) {
+                setFeedback(messages.noEntries, true);
+                return;
+            }
+
+            renderResults(payload.results);
+            setFeedback(messages.selectEntry);
+        } catch (error) {
+            console.error("Search failed", error);
+            setFeedback(messages.searchError, true);
+        } finally {
+            toggleSpinner(false);
+        }
+    }
+
+
+    form.addEventListener("submit", function(event) {
+        event.preventDefault();
+        performSearch(queryInput.value);
+    });
+
+    const initialQuery = queryInput.value.trim();
+    if (initialQuery) {
+        performSearch(initialQuery);
+    }
+})();
+</script>
+{% endblock %}

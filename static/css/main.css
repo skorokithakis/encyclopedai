@@ -1,0 +1,571 @@
+body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", Times, serif;
+    background: #ffffff;
+    color: #000000;
+    line-height: 1.6;
+}
+
+.layout {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+    background: #ffffff;
+    border-left: 1px solid #a7d7f9;
+    border-right: 1px solid #a7d7f9;
+    min-height: 100vh;
+}
+
+.hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-top: 2rem;
+}
+
+.hero__title {
+    font-size: 2.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: normal;
+    color: #000000;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    letter-spacing: -0.02em;
+}
+
+.hero__subtitle {
+    margin: 0 0 2rem 0;
+    color: #54595d;
+    font-size: 1.1rem;
+    font-style: italic;
+    font-family: Georgia, serif;
+}
+
+.search-form {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.search-form__input {
+    flex: 1 1 320px;
+    padding: 0.5rem 0.75rem;
+    border: 2px solid #a2a9b1;
+    font-size: 1rem;
+    background: #ffffff;
+    font-family: sans-serif;
+}
+
+.search-form__input:focus {
+    outline: none;
+    border-color: #3366cc;
+}
+
+.search-form__button {
+    padding: 0.5rem 1.5rem;
+    border: 1px solid #a2a9b1;
+    background: #f8f9fa;
+    color: #000000;
+    font-weight: normal;
+    cursor: pointer;
+    font-family: sans-serif;
+    font-size: 1rem;
+}
+
+.search-form__button:hover {
+    background: #e8eaed;
+    border-color: #72777d;
+}
+
+.search-feedback {
+    margin-top: 1.5rem;
+    min-height: 1.5rem;
+    color: #54595d;
+    font-size: 0.95rem;
+    font-family: sans-serif;
+}
+
+.search-feedback--error {
+    color: #d33;
+}
+
+.search-results {
+    list-style: none;
+    padding: 0;
+    margin: 2rem auto 0;
+    max-width: 700px;
+    display: grid;
+    gap: 0;
+}
+
+.search-results__item {
+    margin: 0;
+    border-bottom: 1px solid #a2a9b1;
+}
+
+.search-results__link {
+    width: 100%;
+    text-align: left;
+    background: #ffffff;
+    border: none;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    display: block;
+    text-decoration: none;
+}
+
+.search-results__link:hover {
+    background: #f8f9fa;
+}
+
+.search-results__link--loading {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.search-results__title {
+    display: block;
+    font-weight: normal;
+    font-size: 1.1rem;
+    color: #0645ad;
+    margin-bottom: 0.35rem;
+    font-family: sans-serif;
+}
+
+.search-results__link:visited .search-results__title {
+    color: #0b0080;
+}
+
+.search-results__snippet {
+    display: block;
+    color: #202122;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: sans-serif;
+}
+
+.hero__meta {
+    margin-top: 1rem;
+    color: #52606d;
+}
+
+.hero__error {
+    margin-top: 1rem;
+    color: #b91c1c;
+}
+
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+    background: #ffffff;
+    border-left: 1px solid #a7d7f9;
+    border-right: 1px solid #a7d7f9;
+    min-height: 100vh;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #a7d7f9;
+    background: #ffffff;
+    margin-bottom: 0;
+}
+
+.page-header__home {
+    color: #000000;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: normal;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+}
+
+.page-header__home strong {
+    font-weight: bold;
+}
+
+.page-header__home:hover {
+    text-decoration: underline;
+}
+
+.page-header__nav {
+    display: flex;
+    gap: 1.5rem;
+    font-family: sans-serif;
+    font-size: 0.9rem;
+}
+
+.page-header__nav-link {
+    color: #0645ad;
+    text-decoration: none;
+}
+
+.page-header__nav-link:hover {
+    text-decoration: underline;
+}
+
+.page-columns {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.article {
+    flex: 1 1 0;
+    background: #ffffff;
+    padding: 0;
+    max-width: none;
+}
+
+.article--wikipedia {
+    /* No special styling needed */
+}
+
+.article__title {
+    margin: 0 0 0.25rem 0;
+    font-size: 2rem;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    font-weight: normal;
+    color: #000000;
+    border-bottom: 1px solid #a2a9b1;
+    padding-bottom: 0.25rem;
+    line-height: 1.3;
+}
+
+.article__header {
+    margin-bottom: 1rem;
+}
+
+.article__tagline {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: #54595d;
+    font-style: italic;
+    font-family: sans-serif;
+}
+
+.article__meta {
+    margin: 0.5rem 0 0;
+    color: #54595d;
+    font-size: 0.8rem;
+    font-family: sans-serif;
+}
+
+.article__meta-item {
+    white-space: nowrap;
+}
+
+.article__meta-divider {
+    padding: 0 0.5rem;
+    color: #a2a9b1;
+}
+
+.article__divider {
+    border: none;
+    border-top: 1px solid #a2a9b1;
+    margin: 1rem 0;
+}
+
+.article__body {
+    margin-top: 1rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
+    color: #202122;
+}
+
+.article__body pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: transparent;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+.article__body h2,
+.article__body h3,
+.article__body h4 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #000000;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    font-weight: normal;
+    border-bottom: 1px solid #a2a9b1;
+    padding-bottom: 0.1rem;
+}
+
+.article__body h2 {
+    font-size: 1.5rem;
+}
+
+.article__body h3 {
+    font-size: 1.25rem;
+    border-bottom: none;
+}
+
+.article__body h4 {
+    font-size: 1.1rem;
+    border-bottom: none;
+}
+
+.article__body p {
+    margin-bottom: 0.8rem;
+}
+
+.article__body ul,
+.article__body ol {
+    margin: 0 0 0.8rem 1.6rem;
+    padding: 0;
+}
+
+.article__body li {
+    margin-bottom: 0.4rem;
+}
+
+.article__body a {
+    color: #0645ad;
+    text-decoration: none;
+}
+
+.article__body a:visited {
+    color: #0b0080;
+}
+
+.article__body a:hover {
+    text-decoration: underline;
+}
+
+.sidebar {
+    flex: 0 0 250px;
+    font-size: 0.85rem;
+    font-family: sans-serif;
+}
+
+.infobox {
+    background: #f8f9fa;
+    border: 1px solid #a2a9b1;
+    padding: 0;
+}
+
+.infobox__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: center;
+    background: #cccccc;
+    padding: 0.5rem;
+    color: #000000;
+}
+
+.infobox__list {
+    margin: 0;
+    padding: 0.75rem;
+}
+
+.infobox__list dt {
+    margin-top: 0.5rem;
+    font-weight: normal;
+    color: #000000;
+    background: #e6e6e6;
+    padding: 0.25rem 0.5rem;
+}
+
+.infobox__list dt:first-child {
+    margin-top: 0;
+}
+
+.infobox__list dd {
+    margin: 0;
+    padding: 0.35rem 0.5rem 0.5rem;
+    background: #f8f9fa;
+    color: #202122;
+}
+
+.infobox__list dd:last-child {
+    padding-bottom: 0;
+}
+
+@media (max-width: 960px) {
+    .page-columns {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        order: -1;
+        flex: 1 1 auto;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.search-spinner {
+    display: none;
+    margin-top: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #54595d;
+    font-size: 0.9rem;
+    font-family: sans-serif;
+}
+
+.search-spinner__label {
+    letter-spacing: 0.01em;
+    font-style: italic;
+}
+
+.search-spinner--visible {
+    display: inline-flex;
+}
+
+.search-spinner__icon {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid #d3d3d3;
+    border-top-color: #54595d;
+    border-radius: 50%;
+    animation: spinner-rotate 0.8s linear infinite;
+}
+
+@keyframes spinner-rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.articles-of-interest {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #a2a9b1;
+}
+
+.articles-of-interest__title {
+    font-size: 1.8rem;
+    font-weight: normal;
+    color: #000000;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+}
+
+.articles-of-interest__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.articles-of-interest__item {
+    margin: 0;
+}
+
+.articles-of-interest__link {
+    display: block;
+    text-decoration: none;
+    border: 1px solid #a2a9b1;
+    padding: 1.25rem;
+    background: #f8f9fa;
+    height: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.articles-of-interest__link:hover {
+    background: #ffffff;
+    border-color: #72777d;
+}
+
+.articles-of-interest__article-title {
+    font-size: 1.15rem;
+    font-weight: normal;
+    color: #0645ad;
+    margin: 0 0 0.5rem 0;
+    font-family: sans-serif;
+    line-height: 1.3;
+}
+
+.articles-of-interest__link:visited .articles-of-interest__article-title {
+    color: #0b0080;
+}
+
+.articles-of-interest__snippet {
+    margin: 0;
+    color: #202122;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    font-family: sans-serif;
+}
+
+.articles-of-interest__snippet * {
+    color: #202122;
+}
+
+@media (max-width: 640px) {
+    .articles-of-interest__list {
+        grid-template-columns: 1fr;
+    }
+}
+
+.article-pending {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.article-pending__title {
+    font-size: 1.8rem;
+    font-weight: normal;
+    color: #000000;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.3;
+}
+
+.article-pending__snippet {
+    color: #54595d;
+    font-size: 1rem;
+    font-family: sans-serif;
+    line-height: 1.6;
+    margin: 0 0 1.5rem 0;
+    font-style: italic;
+}
+
+.article-pending__error {
+    color: #d33;
+    font-size: 1rem;
+    font-family: sans-serif;
+    margin: 1.5rem 0;
+}
+
+.article-pending__actions {
+    margin-top: 1.5rem;
+}
+
+.article-pending__spinner {
+    margin-top: 2rem;
+}
