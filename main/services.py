@@ -80,7 +80,8 @@ def _build_prompt(
       slugs in lowercase with hyphens that begin with /entries/, e.g.
       [gender](/entries/gender/).
     - Any article text that is an important concept that would be a significant entry in an
-      encyclopedia should be a link.
+      encyclopedia (eg names of people, places, concepts, etc) should be a link to that
+      article's page.
     - MathJax is supported, between pairs of $$.
     - DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
