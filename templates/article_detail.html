@@ -4,6 +4,27 @@
 
 {% block title %}{{ article.title }}{% endblock %}
 
+{% block extra_head %}
+    <!-- OpenGraph meta tags for social sharing -->
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="{{ article.title }} - {{ request.site.name }}">
+    <meta property="og:description" content="{% if article.summary_snippet %}{{ article.summary_snippet|truncatewords:50 }}{% else %}{{ article.content|striptags|truncatewords:50 }}{% endif %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:site_name" content="{{ request.site.name }}">
+
+    <!-- Article-specific OpenGraph tags -->
+    <meta property="article:published_time" content="{{ article.created_at|date:'c' }}">
+    <meta property="article:modified_time" content="{{ article.updated_at|date:'c' }}">
+
+    <!-- Twitter Card meta tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ article.title }} - {{ request.site.name }}">
+    <meta name="twitter:description" content="{% if article.summary_snippet %}{{ article.summary_snippet|truncatewords:50 }}{% else %}{{ article.content|striptags|truncatewords:50 }}{% endif %}">
+
+    <!-- Standard meta description for search engines -->
+    <meta name="description" content="{% if article.summary_snippet %}{{ article.summary_snippet|truncatewords:50 }}{% else %}{{ article.content|striptags|truncatewords:50 }}{% endif %}">
+{% endblock %}
+
 {% block content %}
 <main class="page-container">
     <header class="page-header">
