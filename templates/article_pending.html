@@ -27,6 +27,32 @@
                 <p class="article-pending__snippet">{{ pending_snippet }}</p>
             {% endif %}
 
+            {% if pending_link_briefings %}
+                <section class="article-pending__briefings">
+                    <h2 class="article-pending__briefings-title">
+                        {% trans "Cross-reference notes under review" %}
+                    </h2>
+                    <p class="article-pending__briefings-intro">
+                        {% trans "While the archivists retrieve your requested volume, browse these clippings from nearby entries." %}
+                    </p>
+                    <ol class="article-pending__briefings-list">
+                        {% for briefing in pending_link_briefings %}
+                            <li class="article-pending__briefing">
+                                <h3 class="article-pending__briefing-title">{{ briefing.title }}</h3>
+                                {% if briefing.anchor_text %}
+                                    <p class="article-pending__briefing-anchor">
+                                        {% blocktrans with anchor=briefing.anchor_text %}Linked via "{{ anchor }}"{% endblocktrans %}
+                                    </p>
+                                {% endif %}
+                                <blockquote class="article-pending__briefing-excerpt">
+                                    {{ briefing.excerpt|linebreaksbr }}
+                                </blockquote>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+            {% endif %}
+
             {% if pending_error %}
                 <p class="article-pending__error">{{ pending_error }}</p>
 

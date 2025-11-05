@@ -1,3 +1,4 @@
+import html
 import logging
 import re
 import string
@@ -16,6 +17,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import escape
+from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.text import slugify
 from django.utils.text import Truncator
@@ -146,7 +148,10 @@ def _collect_incoming_link_briefings(
     briefings: List[Dict[str, str]] = []
     seen: set[tuple[int | None, str, str]] = set()
     pattern = re.compile(
-        r"\[([^\]]+)\]\(/entries/" + re.escape(cleaned_slug) + r"(?:[#?][^)]*)?\)"
+        r"\[([^\]]+)\]\(/entries/"
+        + re.escape(cleaned_slug)
+        + r"(?:/)?(?:[#?][^)]*)?\)",
+        flags=re.IGNORECASE,
     )
 
     for article in linking_articles:
@@ -167,16 +172,57 @@ def _collect_incoming_link_briefings(
                 if key in seen:
                     continue
                 seen.add(key)
+                plain_excerpt = _strip_markdown_from_excerpt(excerpt)
+                if not plain_excerpt:
+                    continue
                 briefings.append(
                     {
                         "title": article.title,
-                        "excerpt": excerpt,
+                        "excerpt": plain_excerpt,
                         "anchor_text": anchor_text,
                     }
                 )
                 if len(briefings) >= max_items:
                     return briefings
     return briefings
+
+
+def get_incoming_link_briefings(slug: str) -> List[Dict[str, str]]:
+    """
+    Public wrapper for collecting contextual excerpts from incoming links.
+
+    The article pending view uses this so patrons can see the same cross-reference
+    material the editors consult while assembling a new entry.
+    """
+    cleaned_slug = (slug or "").strip()
+    cleaned_slug = slugify(cleaned_slug)
+    if not cleaned_slug:
+        return []
+    return _collect_incoming_link_briefings(cleaned_slug)
+
+
+def _strip_markdown_from_excerpt(text: str) -> str:
+    """
+    Remove common Markdown syntax so snippets read cleanly in plain text.
+    """
+    if not text:
+        return ""
+
+    cleaned_lines: List[str] = []
+    for raw_line in text.splitlines():
+        if not raw_line.strip():
+            continue
+        rendered = _render_snippet_markdown(raw_line)
+        plain_line = strip_tags(rendered)
+        plain_line = html.unescape(plain_line)
+        plain_line = re.sub(r"^\s{0,3}>\s?", "", plain_line)
+        plain_line = re.sub(r"^\s{0,3}#{1,6}\s*", "", plain_line)
+        plain_line = re.sub(r"^\s{0,3}([-*+])\s+", "", plain_line)
+        plain_line = re.sub(r"^\s*\d+\.\s+", "", plain_line)
+        plain_line = re.sub(r"[ \t]+", " ", plain_line).strip()
+        if plain_line:
+            cleaned_lines.append(plain_line)
+    return "\n".join(cleaned_lines).strip()
 
 
 def generate_article_content(

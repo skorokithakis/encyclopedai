@@ -39,6 +39,7 @@ def article_detail(request, slug: str):
     title_hint = (request.GET.get("title") or "").strip()
     snippet_hint = (request.GET.get("snippet") or "").strip()
     display_title = title_hint or services.humanize_slug(slug)
+    link_briefings = services.get_incoming_link_briefings(slug)
 
     if fetch_requested:
         try:
@@ -92,6 +93,7 @@ def article_detail(request, slug: str):
             "pending_snippet": snippet_hint,
             "pending_fetch_url": fetch_url,
             "pending_error": error_message,
+            "pending_link_briefings": link_briefings,
         }
         return render(request, "article_pending.html", context, status=status_code)
 
@@ -103,6 +105,7 @@ def article_detail(request, slug: str):
         "pending_snippet": snippet_hint,
         "pending_fetch_url": fetch_url,
         "pending_error": "",
+        "pending_link_briefings": link_briefings,
     }
     return render(request, "article_pending.html", context, status=202)
 
