@@ -91,7 +91,7 @@ def generate_article_content(topic: str, summary_hint: str | None = None) -> str
         response = client.messages.create(
             model=settings.ANTHROPIC_MODEL,
             max_tokens=settings.ANTHROPIC_MAX_TOKENS,
-            temperature=0.4,
+            temperature=1,
             system="You write concise, reliable encyclopedia entries in Markdown.",
             messages=[{"role": "user", "content": _build_prompt(topic, summary_hint)}],
         )
@@ -139,7 +139,7 @@ def generate_article_summary(title: str, article_body: str) -> str:
         response = client.messages.create(
             model=settings.ANTHROPIC_MODEL,
             max_tokens=256,
-            temperature=0.2,
+            temperature=1,
             system=(
                 "You craft concise reference summaries that read like they were written "
                 "by experienced encyclopedia editors."
@@ -340,7 +340,7 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
         response = client.messages.create(
             model=settings.ANTHROPIC_MODEL,
             max_tokens=1024,
-            temperature=0.2,
+            temperature=1,
             system=(
                 "You staff the EncyclopedAI reference desk. When a patron shares a query, you must "
                 "compile reputable encyclopedia search results. Reply by calling the "
