@@ -13,5 +13,7 @@ urlpatterns = [
         views.create_article_from_result,
         name="article-from-result",
     ),
+    path("entries/<slug:slug>/delete/", views.article_delete, name="article-delete"),
+    path("entries/<slug:slug>/regenerate/", views.article_regenerate, name="article-regenerate"),
     path("entries/<slug:slug>/", views.article_detail, name="article-detail"),
 ]
