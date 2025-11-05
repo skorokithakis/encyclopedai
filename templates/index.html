@@ -60,7 +60,7 @@
         <h2 class="random-articles__title">{% trans "Random articles" %}</h2>
         <div class="random-articles__links">
             {% for article in random_articles %}
-                <a href="{% url 'main:article-detail' slug=article.slug %}">{{ article.title }}</a>{% if not forloop.last %} | {% endif %}
+                <a href="{% url 'main:article-detail' slug=article.slug %}">{{ article.title }}</a>
             {% endfor %}
         </div>
     </section>

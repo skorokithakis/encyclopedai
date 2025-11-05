@@ -769,3 +769,64 @@ body {
 .article-pending__spinner {
     margin-top: 2rem;
 }
+
+.random-articles {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid #a2a9b1;
+}
+
+.random-articles__title {
+    font-size: 1.8rem;
+    font-weight: normal;
+    color: #000000;
+    font-family: "Linux Libertine", Georgia, Times, serif;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+}
+
+.random-articles__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.random-articles__links a {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border: 1px solid #a2a9b1;
+    color: #0645ad;
+    text-decoration: none;
+    font-family: sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    border-radius: 0.25rem;
+    line-height: 1.4;
+}
+
+.random-articles__links a:hover {
+    background: #ffffff;
+    border-color: #3366cc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.random-articles__links a:visited {
+    color: #0b0080;
+}
+
+@media (max-width: 640px) {
+    .random-articles__links {
+        gap: 0.5rem;
+    }
+
+    .random-articles__links a {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+}
