@@ -1,8 +1,9 @@
 import json
 
+from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.middleware.csrf import get_token
 from django.utils.translation import gettext as _
@@ -190,3 +191,22 @@ def create_article_from_result(request):
 
     detail_url = reverse("main:article-detail", kwargs={"slug": article.slug})
     return JsonResponse({"url": detail_url})
+
+
+@require_POST
+@staff_member_required
+def article_delete(request, slug: str):
+    """Delete an article and redirect to the home page."""
+    article = get_object_or_404(Article, slug=slug)
+    article.delete()
+    return redirect("main:index")
+
+
+@require_POST
+@staff_member_required
+def article_regenerate(request, slug: str):
+    """Delete an article and redirect back to its URL to force regeneration."""
+    article = get_object_or_404(Article, slug=slug)
+    article.delete()
+    # Redirect back to the article URL, which will trigger regeneration
+    return redirect("main:article-detail", slug=slug)

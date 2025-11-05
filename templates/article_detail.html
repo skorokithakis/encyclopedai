@@ -41,6 +41,24 @@
                     <dd>{{ article.updated_at|date:"F j, Y" }}</dd>
                 </dl>
             </section>
+
+            {% if user.is_staff %}
+            <section class="admin-actions">
+                <h3 class="admin-actions__title">{% trans "Admin Actions" %}</h3>
+                <form method="post" action="{% url 'main:article-regenerate' article.slug %}" class="admin-actions__form">
+                    {% csrf_token %}
+                    <button type="submit" class="admin-actions__button admin-actions__button--regenerate">
+                        {% trans "Regenerate Article" %}
+                    </button>
+                </form>
+                <form method="post" action="{% url 'main:article-delete' article.slug %}" class="admin-actions__form" onsubmit="return confirm('{% trans "Are you sure you want to delete this article?" %}');">
+                    {% csrf_token %}
+                    <button type="submit" class="admin-actions__button admin-actions__button--delete">
+                        {% trans "Delete Article" %}
+                    </button>
+                </form>
+            </section>
+            {% endif %}
         </aside>
     </div>
 </main>
