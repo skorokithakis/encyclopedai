@@ -9,7 +9,6 @@ https://docs.djangoproject.com/en/2.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
-
 import os
 import re
 from pathlib import Path
@@ -196,13 +195,16 @@ USE_L10N = True
 
 USE_TZ = True
 
-# Anthropic configuration
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-haiku-4-5")
-ANTHROPIC_MAX_TOKENS = int(os.getenv("ANTHROPIC_MAX_TOKENS", "10000"))
+# Gemini configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite-preview-09-2025")
+GEMINI_MAX_OUTPUT_TOKENS = int(os.getenv("GEMINI_MAX_OUTPUT_TOKENS", "10000"))
+GEMINI_API_BASE = os.getenv(
+    "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta/openai/"
+)
 
 # Daily article creation limit to control LLM API costs.
-DAILY_ARTICLE_LIMIT = int(os.getenv("DAILY_ARTICLE_LIMIT", "200"))
+DAILY_ARTICLE_LIMIT = int(os.getenv("DAILY_ARTICLE_LIMIT", "2000"))
 
 SITE_ID = 1
 

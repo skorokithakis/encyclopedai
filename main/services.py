@@ -1,18 +1,18 @@
 import html
+import json
 import logging
 import re
 import string
 from datetime import timedelta
 from types import ModuleType
 from typing import Any
+from typing import cast
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import cast
 from urllib.parse import urlencode
 
 import shortuuid
-from anthropic import Anthropic
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
@@ -23,6 +23,7 @@ from django.utils.html import escape
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.text import Truncator
+from openai import OpenAI
 
 from .models import Article
 from .models import ArticleCreationLock
@@ -121,12 +122,21 @@ else:
     md = markdown_module
 
 
-def _get_client() -> Anthropic:
-    if not settings.ANTHROPIC_API_KEY:
+def _get_client() -> OpenAI:
+    api_key = settings.GEMINI_API_KEY
+    if not api_key:
         raise ImproperlyConfigured(
-            "ANTHROPIC_API_KEY must be configured to generate articles."
+            "GEMINI_API_KEY must be configured to generate articles."
         )
-    return Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    base_url = (
+        getattr(
+            settings,
+            "GEMINI_API_BASE",
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+        ).rstrip("/")
+        + "/"
+    )
+    return OpenAI(api_key=api_key, base_url=base_url)
 
 
 def _build_prompt(
@@ -135,8 +145,8 @@ def _build_prompt(
     link_briefings: List[Dict[str, str]] | None = None,
 ) -> str:
     base_instructions = f"""
-    You are a contributor for a mock online encyclopedia, writing a pretend-authoritative
-    entry titled '{topic}'.
+    You are a contributor for a mock online encyclopedia, writing a pretend-authoritative,
+    detailed entry titled '{topic}'. Write about the topic at depth.
     - Provide a concise introduction followed by as many thematic sections as needed, with
       markdown headings.
     - The writing style should be Wikipedia-like.
@@ -301,32 +311,45 @@ def generate_article_content(
 ) -> str:
     client = _get_client()
     try:
-        response = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
-            max_tokens=settings.ANTHROPIC_MAX_TOKENS,
+        response = client.chat.completions.create(
+            model=settings.GEMINI_MODEL,
+            max_tokens=settings.GEMINI_MAX_OUTPUT_TOKENS,
             temperature=1,
-            system="You write concise, reliable encyclopedia entries in Markdown.",
             messages=[
+                {
+                    "role": "system",
+                    "content": "You write concise, reliable encyclopedia entries in Markdown.",
+                },
                 {
                     "role": "user",
                     "content": _build_prompt(
                         topic, summary_hint, link_briefings=link_briefings
                     ),
-                }
+                },
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Anthropic request for %s failed", topic)
+        logger.exception("Gemini request for %s failed", topic)
         raise RuntimeError("Failed to generate article content.") from exc
 
-    text_blocks = []
-    for block in getattr(response, "content", []):
-        if getattr(block, "type", "") == "text":
-            text_blocks.append(getattr(block, "text", ""))
+    text_blocks: List[str] = []
+    for choice in getattr(response, "choices", []):
+        message = getattr(choice, "message", None)
+        if not message:
+            continue
+        content = getattr(message, "content", None)
+        if isinstance(content, str):
+            text_blocks.append(content)
+            break
+        for block in content or []:
+            if getattr(block, "type", "") == "text":
+                text_blocks.append(getattr(block, "text", ""))
+        if text_blocks:
+            break
 
     article_body = "\n\n".join(part for part in text_blocks if part).strip()
     if not article_body:
-        raise RuntimeError("Anthropic returned an empty response.")
+        raise RuntimeError("Gemini returned an empty response.")
 
     # Strip any leading heading that the LLM may have included despite instructions.
     article_body = strip_leading_heading(article_body)
@@ -356,30 +379,43 @@ def generate_article_summary(title: str, article_body: str) -> str:
     excerpt = Truncator(cleaned_body).chars(4000)
     client = _get_client()
     try:
-        response = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
+        response = client.chat.completions.create(
+            model=settings.GEMINI_MODEL,
             max_tokens=256,
             temperature=1,
-            system=(
-                "You craft concise reference summaries that read like they were written "
-                "by experienced encyclopedia editors."
-            ),
             messages=[
-                {"role": "user", "content": _build_summary_prompt(title, excerpt)}
+                {
+                    "role": "system",
+                    "content": (
+                        "You craft concise reference summaries that read like they were written "
+                        "by experienced encyclopedia editors."
+                    ),
+                },
+                {"role": "user", "content": _build_summary_prompt(title, excerpt)},
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Anthropic summary request for %s failed", title)
+        logger.exception("Gemini summary request for %s failed", title)
         raise RuntimeError("Failed to generate article summary.") from exc
 
     text_blocks: List[str] = []
-    for block in getattr(response, "content", []):
-        if getattr(block, "type", "") == "text":
-            text_blocks.append(getattr(block, "text", ""))
+    for choice in getattr(response, "choices", []):
+        message = getattr(choice, "message", None)
+        if not message:
+            continue
+        content = getattr(message, "content", None)
+        if isinstance(content, str):
+            text_blocks.append(content)
+            break
+        for block in content or []:
+            if getattr(block, "type", "") == "text":
+                text_blocks.append(getattr(block, "text", ""))
+        if text_blocks:
+            break
 
     summary = " ".join(part.strip() for part in text_blocks if part).strip()
     if not summary:
-        raise RuntimeError("Anthropic returned an empty summary.")
+        raise RuntimeError("Gemini returned an empty summary.")
 
     return summary
 
@@ -534,69 +570,75 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
 
     tools = [
         {
-            "name": "submit_search_results",
-            "description": (
-                "Record the final set of search results prepared for a patron. Use polished titles "
-                "and two-sentence snippets that summarise the entry."
-            ),
-            "input_schema": {
-                "type": "object",
-                "properties": {
-                    "results": {
-                        "type": "array",
-                        "minItems": 3,
-                        "maxItems": 6,
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "article_id": {
-                                    "type": "integer",
-                                    "description": (
-                                        "The existing catalogue article identifier, when the result "
-                                        "corresponds to a pre-existing entry."
-                                    ),
+            "type": "function",
+            "function": {
+                "name": "submit_search_results",
+                "description": (
+                    "Record the final set of search results prepared for a patron. Use polished titles "
+                    "and two-sentence snippets that summarise the entry."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "results": {
+                            "type": "array",
+                            "minItems": 3,
+                            "maxItems": 6,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "article_id": {
+                                        "type": "integer",
+                                        "description": (
+                                            "The existing catalogue article identifier, when the result "
+                                            "corresponds to a pre-existing entry."
+                                        ),
+                                    },
+                                    "title": {
+                                        "type": "string",
+                                        "description": "The formal article title the patron should see.",
+                                    },
+                                    "snippet": {
+                                        "type": "string",
+                                        "description": "A concise description of the article's contents.",
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "description": (
+                                            "A disambiguated, URL-ready slug in lowercase with hyphens "
+                                            "that can be appended to /entries/. It must remain unique "
+                                            "within the list."
+                                        ),
+                                    },
                                 },
-                                "title": {
-                                    "type": "string",
-                                    "description": "The formal article title the patron should see.",
-                                },
-                                "snippet": {
-                                    "type": "string",
-                                    "description": "A concise description of the article's contents.",
-                                },
-                                "slug": {
-                                    "type": "string",
-                                    "description": (
-                                        "A disambiguated, URL-ready slug in lowercase with hyphens "
-                                        "that can be appended to /entries/. It must remain unique "
-                                        "within the list."
-                                    ),
-                                },
+                                "required": ["title", "snippet", "slug"],
                             },
-                            "required": ["title", "snippet", "slug"],
-                        },
-                    }
+                        }
+                    },
+                    "required": ["results"],
                 },
-                "required": ["results"],
             },
         }
     ]
     try:
-        response = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
+        response = client.chat.completions.create(
+            model=settings.GEMINI_MODEL,
             max_tokens=1024,
             temperature=1,
-            system=(
-                "You staff the EncyclopedAI reference desk. When a patron shares a query, you must "
-                "compile reputable encyclopedia search results. Reply by calling the "
-                "'submit_search_results' tool exactly once with polished titles and professional "
-                "snippets. Each result must also include a disambiguated slug suitable for use in a "
-                "URL (lowercase, hyphen-delimited, concise, and unique within the list). Do not "
-                "provide any other output. When a suggested entry matches one of the catalogue "
-                "records provided in the patron briefing, include its article_id in the tool "
-                "payload; otherwise omit the field."
-            ),
             messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You staff the EncyclopedAI reference desk. When a patron shares a query, "
+                        "compile reputable encyclopedia search results. Reply by calling the "
+                        "'submit_search_results' tool exactly once with polished titles and professional "
+                        "snippets. Each result must also include a disambiguated slug suitable for use in a "
+                        "URL (lowercase, hyphen-delimited, concise, and unique within the list). Do not "
+                        "provide any other output. When a suggested entry matches one of the catalogue "
+                        "records provided in the patron briefing, include its article_id in the tool "
+                        "payload; otherwise omit the field."
+                    ),
+                },
                 {
                     "role": "user",
                     "content": (
@@ -605,79 +647,103 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
                         f"Patron query: {cleaned_query}"
                         + ("\n\n" + "\n".join(briefing_lines) if briefing_lines else "")
                     ),
-                }
+                },
             ],
             tools=tools,
-            tool_choice={"type": "tool", "name": "submit_search_results"},
+            tool_choice={
+                "type": "function",
+                "function": {"name": "submit_search_results"},
+            },
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Anthropic search request for %s failed", cleaned_query)
+        logger.exception("Gemini search request for %s failed", cleaned_query)
         raise RuntimeError("Failed to generate search results.") from exc
 
-    for block in getattr(response, "content", []):
-        if getattr(block, "type", "") != "tool_use":
+    for choice in getattr(response, "choices", []):
+        message = getattr(choice, "message", None)
+        if not message:
             continue
-        if getattr(block, "name", "") != "submit_search_results":
+        tool_calls = getattr(message, "tool_calls", None)
+        if not tool_calls:
             continue
-        tool_payload = getattr(block, "input", {}) or {}
-        raw_results = tool_payload.get("results", [])
-        parsed: List[Dict[str, object]] = []
-        used_slugs: set[str] = set()
-        for item in raw_results:
-            if not isinstance(item, dict):
+        for tool_call in tool_calls:
+            function = getattr(tool_call, "function", None)
+            if not function or getattr(function, "name", "") != "submit_search_results":
                 continue
-            title = str(item.get("title", "")).strip()
-            snippet = str(item.get("snippet", "")).strip()
-            raw_slug = str(item.get("slug", "")).strip()
-            if not title or not snippet:
-                continue
-            slug_candidate = encyclopedai_slugify(raw_slug) if raw_slug else ""
-            if not slug_candidate:
-                slug_candidate = encyclopedai_slugify(title)
-            if not slug_candidate:
-                continue
-            base_slug = slug_candidate
-            suffix = 1
-            while slug_candidate in used_slugs:
-                suffix += 1
-                slug_candidate = f"{base_slug}-{suffix}"
-            # Render markdown formatting in the snippet to HTML.
-            rendered_snippet = _render_snippet_markdown(snippet)
-            entry: Dict[str, object] = {
-                "title": title,
-                "snippet": rendered_snippet,
-                "slug": slug_candidate,
-            }
-            raw_identifier = item.get("article_id")
-            try:
-                article_id = int(raw_identifier) if raw_identifier is not None else None
-            except (TypeError, ValueError):
-                article_id = None
-            if article_id is not None:
-                matched_article: Article | None = catalogue_lookup.get(article_id)
-                if matched_article is None:
-                    matched_article = Article.objects.filter(pk=article_id).first()
-                    if matched_article is not None:
-                        catalogue_lookup[article_id] = matched_article
-                if matched_article is not None:
-                    entry["article_id"] = article_id
-                    entry["article_url"] = reverse(
-                        "main:article-detail", kwargs={"slug": matched_article.slug}
+            arguments = getattr(function, "arguments", {})
+            if isinstance(arguments, str):
+                try:
+                    tool_payload = json.loads(arguments)
+                except json.JSONDecodeError:
+                    logger.warning(
+                        "Gemini returned malformed tool arguments for %s", cleaned_query
                     )
-                    entry["slug"] = matched_article.slug
-            detail_path = reverse("main:article-detail", kwargs={"slug": entry["slug"]})
-            query_params = {"title": title}
-            if snippet:
-                query_params["snippet"] = snippet
-            entry["entry_url"] = f"{detail_path}?{urlencode(query_params)}"
-            used_slugs.add(cast(str, entry["slug"]))
-            parsed.append(entry)
-        if parsed:
-            # Cap at five results to keep the interface focused.
-            return parsed[:5]
+                    continue
+            elif isinstance(arguments, dict):
+                tool_payload = arguments
+            else:
+                tool_payload = {}
+            raw_results = tool_payload.get("results", [])
+            parsed: List[Dict[str, object]] = []
+            used_slugs: set[str] = set()
+            for item in raw_results:
+                if not isinstance(item, dict):
+                    continue
+                title = str(item.get("title", "")).strip()
+                snippet = str(item.get("snippet", "")).strip()
+                raw_slug = str(item.get("slug", "")).strip()
+                if not title or not snippet:
+                    continue
+                slug_candidate = encyclopedai_slugify(raw_slug) if raw_slug else ""
+                if not slug_candidate:
+                    slug_candidate = encyclopedai_slugify(title)
+                if not slug_candidate:
+                    continue
+                base_slug = slug_candidate
+                suffix = 1
+                while slug_candidate in used_slugs:
+                    suffix += 1
+                    slug_candidate = f"{base_slug}-{suffix}"
+                # Render markdown formatting in the snippet to HTML.
+                rendered_snippet = _render_snippet_markdown(snippet)
+                entry: Dict[str, object] = {
+                    "title": title,
+                    "snippet": rendered_snippet,
+                    "slug": slug_candidate,
+                }
+                raw_identifier = item.get("article_id")
+                try:
+                    article_id = (
+                        int(raw_identifier) if raw_identifier is not None else None
+                    )
+                except (TypeError, ValueError):
+                    article_id = None
+                if article_id is not None:
+                    matched_article: Article | None = catalogue_lookup.get(article_id)
+                    if matched_article is None:
+                        matched_article = Article.objects.filter(pk=article_id).first()
+                        if matched_article is not None:
+                            catalogue_lookup[article_id] = matched_article
+                    if matched_article is not None:
+                        entry["article_id"] = article_id
+                        entry["article_url"] = reverse(
+                            "main:article-detail", kwargs={"slug": matched_article.slug}
+                        )
+                        entry["slug"] = matched_article.slug
+                detail_path = reverse(
+                    "main:article-detail", kwargs={"slug": entry["slug"]}
+                )
+                query_params = {"title": title}
+                if snippet:
+                    query_params["snippet"] = snippet
+                entry["entry_url"] = f"{detail_path}?{urlencode(query_params)}"
+                used_slugs.add(cast(str, entry["slug"]))
+                parsed.append(entry)
+            if parsed:
+                # Cap at five results to keep the interface focused.
+                return parsed[:5]
         break
-
-    raise RuntimeError("Anthropic returned no tool results.")
+    raise RuntimeError("Gemini returned no tool results.")
 
 
 def render_article_markdown(markdown_text: str) -> str:

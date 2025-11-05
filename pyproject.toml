@@ -8,7 +8,6 @@ dependencies = [
     "djangoql",
     "django-extensions",
     "django-redis",
-    "anthropic",
     "markdown",
     "psycopg2-binary",
     "pytest",
@@ -19,6 +18,7 @@ dependencies = [
     "uwsgi",
     "werkzeug",
     "whitenoise",
+    "openai",
 ]
 
 [tool.uv]

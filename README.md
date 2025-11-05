@@ -1,6 +1,6 @@
 # EncyclopedAI
 
-An AI-powered encyclopedia that generates humorous, deliberately slightly absurd encyclopedia entries using Claude's API. The site presents itself as a legitimate encyclopedia while secretly using AI to generate content that is imperceptibly absurd while maintaining a Wikipedia-like tone.
+An AI-powered encyclopedia that generates humorous, deliberately slightly absurd encyclopedia entries using Google's Gemini API (through the OpenAI client). The site presents itself as a legitimate encyclopedia while secretly using AI to generate content that is imperceptibly absurd while maintaining a Wikipedia-like tone.
 
 ## Features
 
@@ -16,7 +16,7 @@ An AI-powered encyclopedia that generates humorous, deliberately slightly absurd
 - **Python 3.13** - Runtime
 - **PostgreSQL** (production) / SQLite (development) - Database
 - **Redis** - Session cache
-- **Anthropic API** - Claude integration for content generation
+- **Gemini API** - Content generation via the OpenAI-compatible Gemini endpoint
 - **Docker** - Containerization and development environment
 
 ## Setup
@@ -38,7 +38,7 @@ uv sync
 
 2. Set environment variables:
 ```bash
-export ANTHROPIC_API_KEY="your-api-key"
+export GEMINI_API_KEY="your-api-key"
 ```
 
 3. Run migrations:
@@ -53,9 +53,10 @@ python manage.py runserver
 
 ### Environment variables
 
-- `ANTHROPIC_API_KEY` - Required. Your Anthropic API key
-- `ANTHROPIC_MODEL` - Optional. Claude model to use (default: claude-haiku-4-5)
-- `ANTHROPIC_MAX_TOKENS` - Optional. Max tokens per generation (default: 10000)
+- `GEMINI_API_KEY` - Required. Your Gemini API key
+- `GEMINI_MODEL` - Optional. Gemini model to use (default: gemini-1.5-flash)
+- `GEMINI_MAX_OUTPUT_TOKENS` - Optional. Max tokens per generation (default: 8192)
+- `GEMINI_API_BASE` - Optional. Override the Gemini API base URL (default points to the OpenAI-compatible endpoint)
 - `DATABASE_URL` - Optional. PostgreSQL connection string for production
 - `REDIS_URL` - Optional. Redis connection string for production
 - `SENTRY_DSN` - Optional. Sentry error tracking
@@ -78,8 +79,8 @@ encyclopedai/
 ## How it works
 
 1. Users search for topics through the homepage
-2. Claude acts as a reference desk, matching queries to existing articles or suggesting new ones
-3. When an article doesn't exist, it's generated on-demand using Claude
+2. Gemini acts as a reference desk, matching queries to existing articles or suggesting new ones
+3. When an article doesn't exist, it's generated on-demand using Gemini
 4. Articles are written in a Wikipedia-like style with deliberate subtle absurdities
 5. Generated articles include internal links to other encyclopedia entries
 6. All content is cached in the database for future requests
