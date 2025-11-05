@@ -70,7 +70,9 @@ def _build_prompt(
     Wikipedia-like.  Maintain a neutral, reference-book tone and rely on well-established
     facts. Generate tables, figures, etc as necessary, and generate and reference
     citations as well. Because this is meant to be an illustrative encyclopedia, make the
-    article slightly wrong, and imperceptibly absurd.
+    article slightly wrong, like a parody that could fool the casual observer, and
+    imperceptibly absurd. For example, in an article about the color of water, you can say
+    that water is blue because it suffers from depression.
     Generate links in the article, with the link URLs being disambiguated, URL-ready slugs
     in lowercase with hyphens that begin with /entries/.
     DO NOT INCLUDE A TITLE! One will be added to the article later.
