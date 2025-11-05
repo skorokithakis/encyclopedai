@@ -16,10 +16,12 @@ class ArticleAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     search_fields = ["title", "content", "summary_snippet"]
     ordering = ["title"]
 
-    def view_article_link(self, obj):
+    @admin.display(description="Article Link")
+    def view_article_link(self, obj: Article) -> str:
         """Display a link to view the article on the site."""
         if obj.pk:
             url = obj.get_absolute_url()
-            return format_html('<a href="{}" target="_blank">View Article on Site</a>', url)
+            return format_html(
+                '<a href="{}" target="_blank">View Article on Site</a>', url
+            )
         return "-"
-    view_article_link.short_description = "Article Link"

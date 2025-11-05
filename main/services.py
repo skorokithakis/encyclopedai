@@ -57,9 +57,7 @@ def _acquire_article_creation_lock(slug: str, title: str) -> str:
     with transaction.atomic():
         ArticleCreationLock.objects.filter(expires_at__lt=now).delete()
         existing = (
-            ArticleCreationLock.objects.select_for_update()
-            .filter(slug=slug)
-            .first()
+            ArticleCreationLock.objects.select_for_update().filter(slug=slug).first()
         )
         if existing and existing.expires_at > now:
             raise ArticleCreationInProgress(existing.slug, existing.title)
