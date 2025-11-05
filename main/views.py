@@ -18,10 +18,12 @@ from .models import Article
 def index(request):
     query = request.GET.get("q", "").strip()
     latest_articles = Article.objects.order_by("-created_at")[:4]
+    random_articles = Article.objects.order_by("?")[:20]
     context = {
         "query": query,
         "csrf_token_value": get_token(request),
         "latest_articles": latest_articles,
+        "random_articles": random_articles,
     }
     return render(request, "index.html", context)
 
