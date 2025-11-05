@@ -1,4 +1,5 @@
 import logging
+import re
 import string
 from types import ModuleType
 from typing import Any
@@ -57,7 +58,11 @@ def _get_client() -> Anthropic:
     return Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 
-def _build_prompt(topic: str, summary_hint: str | None = None) -> str:
+def _build_prompt(
+    topic: str,
+    summary_hint: str | None = None,
+    link_briefings: List[Dict[str, str]] | None = None,
+) -> str:
     base_instructions = f"""
     You are a contributor for a mock online encyclopedia, writing a pretend-authoritative
     entry titled '{topic}'.  Provide a concise introduction followed by as many thematic
@@ -82,10 +87,93 @@ def _build_prompt(topic: str, summary_hint: str | None = None) -> str:
             "introduction and overall coverage, but expand thoughtfully beyond it:\n"
             f"{extra}"
         )
+    context_items: List[str] = []
+    for briefing in link_briefings or []:
+        title = (briefing.get("title") or "").strip()
+        excerpt = (briefing.get("excerpt") or "").strip()
+        anchor_text = (briefing.get("anchor_text") or "").strip()
+        if not title or not excerpt:
+            continue
+        lines: List[str] = [f"Source entry: {title}"]
+        if anchor_text:
+            lines.append(f"Anchor text: {anchor_text}")
+        lines.append("Excerpt:")
+        lines.append(excerpt)
+        context_items.append("\n".join(lines))
+
+    if context_items:
+        base_instructions += (
+            "\n\n"
+            "Readers typically arrive here via the following cross-references. "
+            "Address the expectations they signal, without quoting them verbatim:\n"
+            + "\n\n".join(
+                f"{idx + 1}. {item}" for idx, item in enumerate(context_items)
+            )
+        )
     return base_instructions
 
 
-def generate_article_content(topic: str, summary_hint: str | None = None) -> str:
+def _collect_incoming_link_briefings(
+    target_slug: str,
+    *,
+    lines_before: int = 2,
+    lines_after: int = 2,
+    max_items: int = 5,
+) -> List[Dict[str, str]]:
+    """
+    Compile contextual snippets from other articles that link to the target slug.
+    """
+    cleaned_slug = (target_slug or "").strip()
+    if not cleaned_slug:
+        return []
+
+    lookup_token = f"/entries/{cleaned_slug}"
+    linking_articles = (
+        Article.objects.filter(content__icontains=lookup_token)
+        .exclude(slug=cleaned_slug)
+        .order_by("title")
+    )
+    briefings: List[Dict[str, str]] = []
+    seen: set[tuple[int | None, str, str]] = set()
+    pattern = re.compile(
+        r"\[([^\]]+)\]\(/entries/" + re.escape(cleaned_slug) + r"(?:[#?][^)]*)?\)"
+    )
+
+    for article in linking_articles:
+        lines = article.content.splitlines()
+        for idx, line in enumerate(lines):
+            matches = list(pattern.finditer(line))
+            if not matches:
+                continue
+            start_idx = max(0, idx - lines_before)
+            end_idx = min(len(lines), idx + lines_after + 1)
+            excerpt = "\n".join(lines[start_idx:end_idx]).strip()
+            if not excerpt:
+                continue
+            excerpt = Truncator(excerpt).chars(600)
+            for match in matches:
+                anchor_text = match.group(1).strip()
+                key = (article.pk, excerpt, anchor_text)
+                if key in seen:
+                    continue
+                seen.add(key)
+                briefings.append(
+                    {
+                        "title": article.title,
+                        "excerpt": excerpt,
+                        "anchor_text": anchor_text,
+                    }
+                )
+                if len(briefings) >= max_items:
+                    return briefings
+    return briefings
+
+
+def generate_article_content(
+    topic: str,
+    summary_hint: str | None = None,
+    link_briefings: List[Dict[str, str]] | None = None,
+) -> str:
     client = _get_client()
     try:
         response = client.messages.create(
@@ -93,7 +181,14 @@ def generate_article_content(topic: str, summary_hint: str | None = None) -> str
             max_tokens=settings.ANTHROPIC_MAX_TOKENS,
             temperature=1,
             system="You write concise, reliable encyclopedia entries in Markdown.",
-            messages=[{"role": "user", "content": _build_prompt(topic, summary_hint)}],
+            messages=[
+                {
+                    "role": "user",
+                    "content": _build_prompt(
+                        topic, summary_hint, link_briefings=link_briefings
+                    ),
+                }
+            ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.exception("Anthropic request for %s failed", topic)
@@ -192,8 +287,11 @@ def get_or_create_article(
         return existing, False
 
     summary_for_generation = cleaned_summary or None
+    link_briefings = _collect_incoming_link_briefings(base_slug)
     content = generate_article_content(
-        cleaned_title, summary_hint=summary_for_generation
+        cleaned_title,
+        summary_hint=summary_for_generation,
+        link_briefings=link_briefings,
     )
     article, created = Article.objects.get_or_create(
         slug=base_slug,

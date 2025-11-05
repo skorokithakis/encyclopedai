@@ -41,7 +41,11 @@ class IndexViewTests(TestCase):
             response,
             reverse("main:article-detail", kwargs={"slug": article.slug}),
         )
-        generate_article_content.assert_called_once_with("Zepplinology")
+        generate_article_content.assert_called_once()
+        args, kwargs = generate_article_content.call_args
+        self.assertEqual(args, ("Zepplinology",))
+        self.assertIsNone(kwargs.get("summary_hint"))
+        self.assertEqual(kwargs.get("link_briefings"), [])
 
 
 @override_settings(
@@ -87,6 +91,10 @@ class ArticleDetailTests(TestCase):
         article = Article.objects.get(slug=slug)
         self.assertEqual(article.summary_snippet, "A crisp overview.")
         mock_generate_article_content.assert_called_once()
+        args, kwargs = mock_generate_article_content.call_args
+        self.assertEqual(args, ("New Entry",))
+        self.assertEqual(kwargs.get("summary_hint"), None)
+        self.assertEqual(kwargs.get("link_briefings"), [])
         mock_generate_article_summary.assert_called_once_with(
             "New Entry", "# Heading\n\nDetails about the entry."
         )
