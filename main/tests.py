@@ -63,6 +63,38 @@ class IndexViewTests(TestCase):
         },
     },
 )
+class ArticleSlugTests(TestCase):
+    def test_article_save_preserves_parentheses_in_slug(self):
+        article = Article.objects.create(
+            title="The Sun (newspaper)",
+            content="A venerable publication.",
+        )
+
+        self.assertEqual(article.slug, "the-sun-(newspaper)")
+
+    @mock.patch(
+        "main.services.generate_article_content",
+        return_value="# Heading\n\nBody of the article.",
+    )
+    def test_get_or_create_article_generates_parenthetical_slug(
+        self, mocked_generate_article_content
+    ):
+        article, created = services.get_or_create_article("The Sun (newspaper)")
+
+        self.assertTrue(created)
+        self.assertEqual(article.slug, "the-sun-(newspaper)")
+        mocked_generate_article_content.assert_called_once()
+
+
+@override_settings(
+    STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
+    STORAGES={
+        "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+        },
+    },
+)
 class ArticleDetailTests(TestCase):
     def test_markdown_renders_as_html(self):
         article = Article.objects.create(
@@ -76,6 +108,21 @@ class ArticleDetailTests(TestCase):
 
         self.assertContains(response, "<h2>Section</h2>", html=True)
         self.assertContains(response, "<em>Bullet</em>", html=True)
+
+    def test_detail_allows_parentheses_and_slashes_in_slug(self):
+        complex_slug = "archives/topic-(curated)"
+        article = Article.objects.create(
+            title="Curated Topic",
+            slug=complex_slug,
+            content="An especially curated entry.",
+        )
+
+        response = self.client.get(
+            reverse("main:article-detail", kwargs={"slug": complex_slug})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "especially curated entry.")
 
     @mock.patch(
         "main.services.generate_article_summary", return_value="A crisp overview."

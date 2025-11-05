@@ -22,11 +22,11 @@ from django.utils import timezone
 from django.utils.html import escape
 from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.text import slugify
 from django.utils.text import Truncator
 
 from .models import Article
 from .models import ArticleCreationLock
+from .slugs import encyclopedai_slugify
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ def get_incoming_link_briefings(slug: str) -> List[Dict[str, str]]:
     material the editors consult while assembling a new entry.
     """
     cleaned_slug = (slug or "").strip()
-    cleaned_slug = slugify(cleaned_slug)
+    cleaned_slug = encyclopedai_slugify(cleaned_slug)
     if not cleaned_slug:
         return []
     return _collect_incoming_link_briefings(cleaned_slug)
@@ -389,9 +389,9 @@ def get_or_create_article(
             existing.save(update_fields=["summary_snippet"])
         return existing, False
 
-    preferred_slug = slugify(slug_hint or "") if slug_hint else ""
+    preferred_slug = encyclopedai_slugify(slug_hint or "") if slug_hint else ""
     if not preferred_slug:
-        preferred_slug = slugify(cleaned_title)
+        preferred_slug = encyclopedai_slugify(cleaned_title)
     base_slug = preferred_slug or f"article-{shortuuid.uuid()}"
     existing = Article.objects.filter(slug=base_slug).first()
     if existing:
@@ -613,9 +613,9 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
             raw_slug = str(item.get("slug", "")).strip()
             if not title or not snippet:
                 continue
-            slug_candidate = slugify(raw_slug) if raw_slug else ""
+            slug_candidate = encyclopedai_slugify(raw_slug) if raw_slug else ""
             if not slug_candidate:
-                slug_candidate = slugify(title)
+                slug_candidate = encyclopedai_slugify(title)
             if not slug_candidate:
                 continue
             base_slug = slug_candidate

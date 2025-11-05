@@ -17,6 +17,22 @@ from .models import Article
 
 def index(request):
     query = request.GET.get("q", "").strip()
+    if query:
+        try:
+            article, _created = services.get_or_create_article(query)
+        except services.ArticleCreationInProgress as exc:
+            detail_url = reverse("main:article-detail", kwargs={"slug": exc.slug})
+            params = {"fetch": "1"}
+            if query and query.lower() != (exc.title or "").lower():
+                params["title"] = query
+            if params:
+                detail_url = f"{detail_url}?{urlencode(params)}"
+            return redirect(detail_url)
+        except (ImproperlyConfigured, ValueError, RuntimeError):
+            pass
+        else:
+            return redirect("main:article-detail", slug=article.slug)
+
     latest_articles = Article.objects.order_by("-created_at")[:4]
     random_articles = Article.objects.order_by("?")[:20]
     context = {

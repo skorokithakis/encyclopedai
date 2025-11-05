@@ -1,8 +1,9 @@
+import shortuuid
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.urls import reverse
-from django.utils.text import slugify
-import shortuuid
+
+from .slugs import encyclopedai_slugify
 
 
 class User(AbstractUser):
@@ -86,7 +87,7 @@ class Article(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = slugify(self.title) or f"article-{shortuuid.uuid()}"
+            base_slug = encyclopedai_slugify(self.title) or f"article-{shortuuid.uuid()}"
             slug_candidate = base_slug
             index = 1
             while (
