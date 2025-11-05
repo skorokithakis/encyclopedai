@@ -87,7 +87,9 @@ class Article(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            base_slug = encyclopedai_slugify(self.title) or f"article-{shortuuid.uuid()}"
+            base_slug = (
+                encyclopedai_slugify(self.title) or f"article-{shortuuid.uuid()}"
+            )
             slug_candidate = base_slug
             index = 1
             while (

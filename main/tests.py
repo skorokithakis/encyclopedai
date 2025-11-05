@@ -111,7 +111,7 @@ class ArticleDetailTests(TestCase):
 
     def test_detail_allows_parentheses_and_slashes_in_slug(self):
         complex_slug = "archives/topic-(curated)"
-        article = Article.objects.create(
+        Article.objects.create(
             title="Curated Topic",
             slug=complex_slug,
             content="An especially curated entry.",
