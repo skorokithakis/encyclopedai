@@ -4,9 +4,11 @@ from urllib.parse import urlencode
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ImproperlyConfigured
 from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
 from django.middleware.csrf import get_token
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
+from django.urls import reverse
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
@@ -135,15 +137,22 @@ def article_detail(request, slug: str):
     pending_params = request.GET.copy()
     pending_params["fetch"] = "1"
     fetch_url = f"{request.path}?{pending_params.urlencode()}"
+    pending_error = ""
+    status_code = 202
+    try:
+        services.enforce_daily_article_limit()
+    except services.DailyArticleLimitExceeded as exc:
+        pending_error = str(exc)
+        status_code = 503
     context = {
         "pending_title": display_title,
         "pending_snippet": snippet_hint,
         "pending_fetch_url": fetch_url,
-        "pending_error": "",
+        "pending_error": pending_error,
         "pending_link_briefings": link_briefings,
         "pending_notice": "",
     }
-    return render(request, "article_pending.html", context, status=202)
+    return render(request, "article_pending.html", context, status=status_code)
 
 
 @require_GET

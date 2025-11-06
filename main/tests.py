@@ -94,6 +94,7 @@ class ArticleSlugTests(TestCase):
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
         },
     },
+    DAILY_ARTICLE_LIMIT=1,
 )
 class ArticleDetailTests(TestCase):
     def test_markdown_renders_as_html(self):
@@ -151,6 +152,21 @@ class ArticleDetailTests(TestCase):
         mock_generate_article_summary.assert_called_once_with(
             "New Entry", "# Heading\n\nDetails about the entry."
         )
+
+    def test_pending_page_surfaces_limit_error_without_waiting(self):
+        Article.objects.create(
+            title="Limit Placeholder",
+            content="Just enough text to count toward the limit.",
+        )
+
+        response = self.client.get(
+            reverse("main:article-detail", kwargs={"slug": "limit-reached"})
+        )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertTemplateUsed(response, "article_pending.html")
+        self.assertTrue(response.context["pending_error"])
+        self.assertNotContains(response, "setTimeout", status_code=503)
 
 
 @override_settings(

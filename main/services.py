@@ -165,6 +165,8 @@ def _build_prompt(
       encyclopedia (eg names of people, places, concepts, etc) should be a link to that
       article's page.
     - MathJax is supported, between pairs of $$.
+    - Don't create wiki links for references (e.g. "Foucault, 1864"), as those are not
+      notable encyclopedia articles.
     - DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
     if summary_hint:
@@ -421,6 +423,17 @@ def generate_article_summary(title: str, article_body: str) -> str:
     return summary
 
 
+def enforce_daily_article_limit() -> None:
+    """
+    Raise an error if the daily article creation limit has been exhausted.
+    """
+    articles_created_today = Article.objects.filter(
+        created_at__date=timezone.now().date()
+    ).count()
+    if articles_created_today >= settings.DAILY_ARTICLE_LIMIT:
+        raise DailyArticleLimitExceeded()
+
+
 def get_or_create_article(
     topic: str, summary_hint: str | None = None, slug_hint: str | None = None
 ) -> Tuple[Article, bool]:
@@ -448,12 +461,7 @@ def get_or_create_article(
             existing.save(update_fields=["summary_snippet"])
         return existing, False
 
-    # Check if the daily article creation limit has been reached.
-    articles_created_today = Article.objects.filter(
-        created_at__date=timezone.now().date()
-    ).count()
-    if articles_created_today >= settings.DAILY_ARTICLE_LIMIT:
-        raise DailyArticleLimitExceeded()
+    enforce_daily_article_limit()
 
     lock_token = _acquire_article_creation_lock(base_slug, cleaned_title)
     try:
