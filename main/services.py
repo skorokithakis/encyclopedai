@@ -159,8 +159,9 @@ def _build_prompt(
       say that water is blue because it suffers from depression.
     - Generate links in the article, with the link URLs being disambiguated, URL-ready
       slugs in lowercase with hyphens that begin with /entries/, e.g.
-      [gender](/entries/gender/).
-    - Any article text that is an important concept that would be a significant entry in an
+      [gender](/entries/gender/). Disambiguation should be linked with parentheses, as
+      e.g. `[sun](/entries/sun-(star)/)`.
+    - Any text that is an important concept that would be a significant entry in an
       encyclopedia (eg names of people, places, concepts, etc) should be a link to that
       article's page.
     - MathJax is supported, between pairs of $$.
