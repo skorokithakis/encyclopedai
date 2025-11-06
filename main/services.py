@@ -32,6 +32,12 @@ from .slugs import encyclopedai_slugify
 logger = logging.getLogger(__name__)
 
 ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
+_ENTRY_LINK_PATTERN = re.compile(
+    r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/[^\s)]+)(\))", flags=re.IGNORECASE
+)
+_ENTRY_BARE_LINK_PATTERN = re.compile(
+    r"https?://[^\s)]+(/entries/[^\s)\]]+)", flags=re.IGNORECASE
+)
 
 
 class ArticleCreationInProgress(Exception):
@@ -111,6 +117,29 @@ def strip_leading_heading(text: str) -> str:
     # Remove the first heading if the content starts with one.
     # This matches H1-H6 headings at the start of the content.
     return re.sub(r"^#{1,6}\s+.*?(\n|$)", "", cleaned, count=1).strip()
+
+
+def cleanup_internal_links(text: str) -> str:
+    """
+    Normalize Markdown links so domain-qualified /entries/ URLs become site-relative.
+    """
+    if not text:
+        return ""
+
+    def _markdown_repl(match: re.Match[str]) -> str:
+        return f"{match.group(1)}{match.group(2)}{match.group(3)}"
+
+    cleaned = _ENTRY_LINK_PATTERN.sub(_markdown_repl, text)
+    cleaned = _ENTRY_BARE_LINK_PATTERN.sub(r"\1", cleaned)
+    return cleaned
+
+
+def cleanup_article_body(text: str) -> str:
+    """
+    Apply the full set of cleanup steps to generated article content.
+    """
+    cleaned = strip_leading_heading(text or "")
+    return cleanup_internal_links(cleaned)
 
 
 md: ModuleType | None
@@ -355,8 +384,7 @@ def generate_article_content(
     if not article_body:
         raise RuntimeError("Gemini returned an empty response.")
 
-    # Strip any leading heading that the LLM may have included despite instructions.
-    article_body = strip_leading_heading(article_body)
+    article_body = cleanup_article_body(article_body)
 
     return article_body
 
