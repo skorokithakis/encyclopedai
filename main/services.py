@@ -150,7 +150,8 @@ def _build_prompt(
     - Provide a concise introduction followed by as many thematic sections as needed, with
       markdown headings.
     - The writing style should be Wikipedia-like.
-    - Maintain a neutral, reference-book tone and rely on well-established facts.
+    - Maintain a neutral, reference-book tone and make up things that sound like facts,
+      but that are slightly absurd or nonsensical.
     - Generate tables, figures, etc as necessary, and generate and reference citations as
       well. Only generate tables when you need to.
     - Because this is meant to be an illustrative encyclopedia, make the
@@ -384,7 +385,7 @@ def generate_article_summary(title: str, article_body: str) -> str:
     try:
         response = client.chat.completions.create(
             model=settings.GEMINI_MODEL,
-            max_tokens=256,
+            max_tokens=1000,
             temperature=1,
             messages=[
                 {
