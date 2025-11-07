@@ -692,7 +692,7 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
     try:
         response = client.chat.completions.create(
             model=settings.GEMINI_MODEL,
-            max_tokens=1024,
+            max_tokens=2000,
             temperature=1,
             messages=[
                 {
