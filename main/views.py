@@ -14,6 +14,7 @@ from django.views.decorators.http import require_GET
 from django.views.decorators.http import require_POST
 
 from . import services
+from . import utils
 from .models import Article
 
 
@@ -67,6 +68,21 @@ def article_detail(request, slug: str):
     link_briefings = services.get_incoming_link_briefings(slug)
 
     if fetch_requested:
+        user_agent = request.META.get("HTTP_USER_AGENT", "")
+        if not utils.is_whitelisted(user_agent):
+            pending_params = request.GET.copy()
+            pending_params.pop("fetch", None)
+            pending_params["fetch"] = "1"
+            fetch_url = f"{request.path}?{pending_params.urlencode()}"
+            context = {
+                "pending_title": display_title,
+                "pending_snippet": snippet_hint,
+                "pending_fetch_url": fetch_url,
+                "pending_error": _("I'm sorry, the archivists do not work for bots."),
+                "pending_link_briefings": link_briefings,
+                "pending_notice": "",
+            }
+            return render(request, "article_pending.html", context, status=403)
         pending_notice = ""
         try:
             article, _created = services.get_or_create_article(
