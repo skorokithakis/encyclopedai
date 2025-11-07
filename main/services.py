@@ -168,7 +168,28 @@ def _get_client() -> OpenAI:
     return OpenAI(api_key=api_key, base_url=base_url)
 
 
-def _build_prompt(
+def _extract_text_blocks(response: Any) -> List[str]:
+    """
+    Collect text blocks from a chat completion response, preserving their order.
+    """
+    text_blocks: List[str] = []
+    for choice in getattr(response, "choices", []):
+        message = getattr(choice, "message", None)
+        if not message:
+            continue
+        content = getattr(message, "content", None)
+        if isinstance(content, str):
+            text_blocks.append(content)
+            break
+        for block in content or []:
+            if getattr(block, "type", "") == "text":
+                text_blocks.append(getattr(block, "text", ""))
+        if text_blocks:
+            break
+    return [part for part in text_blocks if part]
+
+
+def _build_article_prompt(
     topic: str,
     summary_hint: str | None = None,
     link_briefings: List[Dict[str, str]] | None = None,
@@ -187,16 +208,9 @@ def _build_prompt(
       article slightly wrong, like a parody that could fool the casual observer, and
       imperceptibly absurd. For example, in an article about the color of water, you can
       say that water is blue because it suffers from depression.
-    - Generate links in the article, with the link URLs being disambiguated, URL-ready
-      slugs in lowercase with hyphens that begin with /entries/, e.g.
-      [gender](/entries/gender/). Disambiguation should be linked with parentheses, as
-      e.g. `[sun](/entries/sun-(star)/)`.
-    - Any text that is an important concept that would be a significant entry in an
-      encyclopedia (eg names of people, places, concepts, etc) should be a link to that
-      article's page.
+    - Do not include Markdown links; refer to related topics in plain text. The
+      cross-reference desk will add hyperlinks later.
     - MathJax is supported, between pairs of $$.
-    - Don't create wiki links for references (e.g. "Foucault, 1864"), as those are not
-      notable encyclopedia articles.
     - DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
     if summary_hint:
@@ -235,6 +249,27 @@ def _build_prompt(
             )
         )
     return base_instructions
+
+
+def _build_link_prompt(topic: str, article_body: str) -> str:
+    cleaned_title = (topic or "").strip() or "Untitled Entry"
+    cleaned_body = (article_body or "").strip()
+    return (
+        "You serve as the cross-reference editor for a mock encyclopedia. "
+        "Add internal Markdown links to the provided entry while preserving its wording.\n"
+        "- Only adjust the text enough to insert links; do not remove sections or add new commentary.\n"
+        "- Use disambiguated, URL-ready slugs in lowercase with hyphens that begin with /entries/, "
+        "e.g. [gender](/entries/gender/).\n"
+        "- When disambiguation is needed, include it in parentheses within the slug, e.g. "
+        "[sun](/entries/sun-(star)/).\n"
+        "- Any notable concept, person, place, or invention that would warrant its own entry should be linked.\n"
+        '- Do not link references or citations such as "Foucault, 1864".\n'
+        "- Leave the title off and keep all existing Markdown structure, math, and tables intact.\n"
+        "- Return only the revised article with the newly added links.\n\n"
+        f"Entry title: {cleaned_title}\n"
+        "Article draft:\n"
+        f"{cleaned_body}"
+    )
 
 
 def _collect_incoming_link_briefings(
@@ -344,7 +379,7 @@ def generate_article_content(
 ) -> str:
     client = _get_client()
     try:
-        response = client.chat.completions.create(
+        draft_response = client.chat.completions.create(
             model=settings.GEMINI_MODEL,
             max_tokens=settings.GEMINI_MAX_OUTPUT_TOKENS,
             temperature=1,
@@ -355,38 +390,48 @@ def generate_article_content(
                 },
                 {
                     "role": "user",
-                    "content": _build_prompt(
+                    "content": _build_article_prompt(
                         topic, summary_hint, link_briefings=link_briefings
                     ),
                 },
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Gemini request for %s failed", topic)
+        logger.exception("Gemini draft request for %s failed", topic)
         raise RuntimeError("Failed to generate article content.") from exc
 
-    text_blocks: List[str] = []
-    for choice in getattr(response, "choices", []):
-        message = getattr(choice, "message", None)
-        if not message:
-            continue
-        content = getattr(message, "content", None)
-        if isinstance(content, str):
-            text_blocks.append(content)
-            break
-        for block in content or []:
-            if getattr(block, "type", "") == "text":
-                text_blocks.append(getattr(block, "text", ""))
-        if text_blocks:
-            break
-
-    article_body = "\n\n".join(part for part in text_blocks if part).strip()
-    if not article_body:
+    draft_body = "\n\n".join(_extract_text_blocks(draft_response)).strip()
+    if not draft_body:
         raise RuntimeError("Gemini returned an empty response.")
 
-    article_body = cleanup_article_body(article_body)
+    cleaned_draft = cleanup_article_body(draft_body)
 
-    return article_body
+    link_prompt = _build_link_prompt(topic, cleaned_draft)
+    try:
+        link_response = client.chat.completions.create(
+            model=settings.GEMINI_MODEL,
+            max_tokens=settings.GEMINI_MAX_OUTPUT_TOKENS,
+            temperature=1,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You add polished cross-references to encyclopedia entries in Markdown.",
+                },
+                {
+                    "role": "user",
+                    "content": link_prompt,
+                },
+            ],
+        )
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.exception("Gemini link enrichment for %s failed", topic)
+        raise RuntimeError("Failed to generate article content.") from exc
+
+    linked_body = "\n\n".join(_extract_text_blocks(link_response)).strip()
+    if not linked_body:
+        raise RuntimeError("Gemini returned an empty response.")
+
+    return cleanup_article_body(linked_body)
 
 
 def _build_summary_prompt(title: str, article_excerpt: str) -> str:
@@ -430,22 +475,8 @@ def generate_article_summary(title: str, article_body: str) -> str:
         logger.exception("Gemini summary request for %s failed", title)
         raise RuntimeError("Failed to generate article summary.") from exc
 
-    text_blocks: List[str] = []
-    for choice in getattr(response, "choices", []):
-        message = getattr(choice, "message", None)
-        if not message:
-            continue
-        content = getattr(message, "content", None)
-        if isinstance(content, str):
-            text_blocks.append(content)
-            break
-        for block in content or []:
-            if getattr(block, "type", "") == "text":
-                text_blocks.append(getattr(block, "text", ""))
-        if text_blocks:
-            break
-
-    summary = " ".join(part.strip() for part in text_blocks if part).strip()
+    summary_blocks = _extract_text_blocks(response)
+    summary = " ".join(part.strip() for part in summary_blocks).strip()
     if not summary:
         raise RuntimeError("Gemini returned an empty summary.")
 
