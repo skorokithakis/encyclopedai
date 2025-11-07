@@ -66,8 +66,7 @@
                     <p class="article-pending__notice">{{ pending_notice }}</p>
                 {% endif %}
                 <div class="search-spinner search-spinner--visible article-pending__spinner" aria-hidden="true">
-                    <div class="search-spinner__icon"></div>
-                    <p class="search-spinner__label">{% trans "Consulting the archives." %}</p>
+                    {% include "fragments/spinner.html" %}
                 </div>
             {% endif %}
         </section>
@@ -80,6 +79,8 @@
                 window.setTimeout(function() {
                     window.location.replace(url);
                 }, 2000);
+
+                initializeSpinnerRotation(".article-pending__spinner");
             })();
         </script>
     {% endif %}

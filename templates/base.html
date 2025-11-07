@@ -7,15 +7,37 @@
     {% block extra_head %}{% endblock %}
 
     <link href="{% static "css/main.css" %}" rel="stylesheet">
+    <script src="{% static "js/base.js" %}"></script>
     <script>
         window.__mathjaxTypesetQueue = [];
         window.__mathjaxIsReady = false;
+
+        const __mathjaxPatterns = [
+            /\$\$[\s\S]+?\$\$/,
+            /\$(?!\s)[\s\S]+?\$/,
+            /\\\([\s\S]+?\\\)/,
+            /\\\[[\s\S]+?\\\]/,
+        ];
+
+        function __elementHasMathDelimiters(element) {
+            if (!element) {
+                return false;
+            }
+            const textContent = element.textContent || "";
+            if (!textContent) {
+                return false;
+            }
+            const sanitized = textContent.replace(/\\\$/g, "");
+            return __mathjaxPatterns.some((pattern) => pattern.test(sanitized));
+        }
+
         window.requestMathTypeset = function(element) {
-            const target = element || null;
+            const target = element || document.body || null;
+            if (!target || !__elementHasMathDelimiters(target)) {
+                return;
+            }
             if (window.__mathjaxIsReady && window.MathJax && MathJax.typesetPromise) {
-                const renderPromise = target
-                    ? MathJax.typesetPromise([target])
-                    : MathJax.typesetPromise();
+                const renderPromise = MathJax.typesetPromise([target]);
                 renderPromise.catch(function(error) {
                     console.error("MathJax rendering failed", error);
                 });
@@ -41,7 +63,7 @@
                     const followUpRender = () =>
                         Promise.all(
                             pendingTargets
-                                .filter(Boolean)
+                                .filter(__elementHasMathDelimiters)
                                 .map((target) => MathJax.typesetPromise([target]))
                         );
                     initialRender

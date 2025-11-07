@@ -31,8 +31,7 @@
         </form>
         <div id="search-feedback" class="search-feedback" role="status" aria-live="polite"></div>
         <div id="search-spinner" class="search-spinner" aria-hidden="true">
-            <div class="search-spinner__icon" aria-hidden="true"></div>
-            <span class="search-spinner__label">{% trans "Consulting the archives..." %}</span>
+            {% include "fragments/spinner.html" %}
         </div>
         <ul id="search-results" class="search-results" aria-live="polite"></ul>
     </section>
@@ -196,6 +195,8 @@
     if (initialQuery) {
         performSearch(initialQuery);
     }
+
+    initializeSpinnerRotation("#search-spinner");
 })();
 </script>
 {% endblock %}
