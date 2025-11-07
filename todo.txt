@@ -1,0 +1,98 @@
+EncyclopedAI Homepage Enhancement TODO
+=====================================
+
+Current State:
+- Hero section with centered search (KEEP VERY PROMINENT)
+- "Articles of interest" with 4 latest articles (minimal previews)
+- "Random articles" with 20 article titles as pills
+- Wikipedia-inspired aesthetic with serif typography
+
+---
+
+HIGH PRIORITY - Quick Wins
+===========================
+
+[ ] 2. Add metadata to article cards
+    - Show publication date (article.created_at)
+    - Calculate and display reading time estimate (based on content length)
+    - Add "Updated" indicator if updated_at differs significantly from created_at
+    - Style as small badges or metadata line
+
+[ ] 3. Improve article card styling
+    - Add better spacing between cards
+    - Enhance hover states (current implementation is basic)
+    - Add subtle shadows for depth
+    - Add clear "Read article →" or similar CTA
+    - Consider slightly larger cards with more breathing room
+
+[ ] 5. Reorganize random articles section
+    Option A: Reduce to smaller curated "Explore more" (8-10 articles)
+    Option B: Group into themed clusters if we can detect topics
+    Option C: Replace with prominent "Random article" button
+    - Current 20-pill layout is overwhelming and low-value
+    - Makes page end feel cluttered
+
+---
+
+MEDIUM PRIORITY - More Engagement
+==================================
+
+[ ] 8. Improve visual hierarchy of entire page
+    - Review spacing between sections
+    - Ensure search remains the dominant element
+    - Create better visual flow down the page
+    - Consider max-width constraints for readability
+
+[ ] 9. Enhanced hover interactions
+    - Expandable previews (show more summary on hover/click)
+    - Smooth transitions
+    - Preview expansion without navigation (optional)
+
+[ ] 10. Add "Surprise me" / "Random article" button
+     - More prominent than current random article links
+     - Place near search or in header
+     - Direct navigation to random article
+
+---
+
+LOWER PRIORITY - Nice to Have
+==============================
+
+[ ] 11. Search enhancements (without reducing prominence)
+     - Show rotating example queries ("Try: Solar system, Quantum mechanics...")
+     - Add recent popular searches if tracking is implemented
+     - Make autocomplete/suggestions more visible
+
+[ ] 12. Category/topic exploration
+     - If articles have topics/tags, show "Explore by topic" sections
+     - Requires topic detection or tagging system
+     - Could be manual or automated
+
+---
+
+TECHNICAL NOTES
+===============
+
+Available but underutilized:
+- Article.summary_snippet (AI-generated, not used on homepage)
+- Article.content_preview (used, but could be enhanced)
+- Rich markdown content available for previews
+
+Design constraints to maintain:
+- Wikipedia-inspired aesthetic (serif headings, sans-serif UI)
+- Minimal color palette (black text, blue links, subtle grays)
+- No decorative imagery or complex graphics
+- Typography-focused, content-first approach
+- Search box must remain hero element
+
+Existing patterns to leverage:
+- Card-based layouts (static/css/main.css lines 652-724)
+- Grid system (already responsive)
+- Pill-style links (static/css/main.css lines 773-832)
+- Hover effects throughout site
+
+Backend considerations:
+- View: main/views.py lines 21-51 (index function)
+- Model: main/models.py lines 13-102 (Article model)
+- Markdown rendering: main/services.py
+- Template filter: main/templatetags/markdown_filters.py

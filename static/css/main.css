@@ -650,7 +650,7 @@ body {
 }
 
 .articles-of-interest {
-    margin-top: 3rem;
+    margin-top: 4rem;
     padding-top: 2rem;
     border-top: 1px solid #a2a9b1;
 }
@@ -668,35 +668,43 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
 }
 
 .articles-of-interest__item {
     margin: 0;
+    flex: 1 1 calc(50% - 1rem);
+    min-width: 300px;
+    display: flex;
 }
 
 .articles-of-interest__link {
-    display: block;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
     border: 1px solid #a2a9b1;
-    padding: 1.25rem;
+    padding: 1.5rem;
     background: #f8f9fa;
     height: 100%;
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
 }
 
 .articles-of-interest__link:hover {
     background: #ffffff;
-    border-color: #72777d;
+    border-color: #3366cc;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
 }
 
 .articles-of-interest__article-title {
-    font-size: 1.15rem;
+    font-size: 1.2rem;
     font-weight: normal;
     color: #0645ad;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.75rem 0;
     font-family: sans-serif;
     line-height: 1.3;
 }
@@ -706,20 +714,43 @@ body {
 }
 
 .articles-of-interest__snippet {
-    margin: 0;
+    margin: 0 0 0.5rem 0;
     color: #202122;
     font-size: 0.9rem;
     line-height: 1.5;
     font-family: sans-serif;
+    flex: 1;
 }
 
 .articles-of-interest__snippet * {
     color: #202122;
 }
 
+.articles-of-interest__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #0645ad;
+    font-size: 0.9rem;
+    font-family: sans-serif;
+    font-weight: 500;
+    margin-top: auto;
+}
+
+.articles-of-interest__cta::after {
+    content: "→";
+    font-size: 1.1rem;
+    transition: transform 0.2s ease;
+}
+
+.articles-of-interest__link:hover .articles-of-interest__cta::after {
+    transform: translateX(3px);
+}
+
 @media (max-width: 640px) {
-    .articles-of-interest__list {
-        grid-template-columns: 1fr;
+    .articles-of-interest__item {
+        flex: 1 1 100%;
+        min-width: 100%;
     }
 }
 
@@ -771,7 +802,7 @@ body {
 }
 
 .random-articles {
-    margin-top: 3rem;
+    margin-top: 4rem;
     padding-top: 2rem;
     border-top: 1px solid #a2a9b1;
 }

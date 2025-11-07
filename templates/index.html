@@ -48,6 +48,7 @@
                     {% if article.content_preview %}
                     <div class="articles-of-interest__snippet">{{ article.content_preview|render_markdown|safe }}</div>
                     {% endif %}
+                    <span class="articles-of-interest__cta">{% trans "Read article" %}</span>
                 </a>
             </li>
             {% endfor %}
