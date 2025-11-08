@@ -210,6 +210,8 @@ def _build_article_prompt(
       say that water is blue because it suffers from depression.
     - Do not include Markdown links; refer to related topics in plain text. The
       cross-reference desk will add hyperlinks later.
+    - When a subject requires disambiguation, present the name using parentheses,
+      e.g. Mercury (planet) or Atlas (mythology).
     - MathJax is supported, between pairs of $$.
     - DO NOT INCLUDE A TITLE! One will be added to the article later.
     """.strip()
@@ -260,8 +262,9 @@ def _build_link_prompt(topic: str, article_body: str) -> str:
         "- Only adjust the text enough to insert links; do not remove sections or add new commentary.\n"
         "- Use disambiguated, URL-ready slugs in lowercase with hyphens that begin with /entries/, "
         "e.g. [gender](/entries/gender/).\n"
-        "- When disambiguation is needed, include it in parentheses within the slug, e.g. "
-        "[sun](/entries/sun-(star)/).\n"
+        "- When disambiguation is needed, ensure the visible text reads 'name (descriptor)' and "
+        "the slug keeps that descriptor in parentheses, e.g. "
+        "[sun (star)](/entries/sun-(star)/).\n"
         "- Any notable concept, person, place, or invention that would warrant its own entry should be linked.\n"
         '- Do not link references or citations such as "Foucault, 1864".\n'
         "- Leave the title off and keep all existing Markdown structure, math, and tables intact.\n"
@@ -701,8 +704,10 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
                         "You staff the EncyclopedAI reference desk. When a patron shares a query, "
                         "compile reputable encyclopedia search results. Reply by calling the "
                         "'submit_search_results' tool exactly once with polished titles and professional "
-                        "snippets. Each result must also include a disambiguated slug suitable for use in a "
-                        "URL (lowercase, hyphen-delimited, concise, and unique within the list). Do not "
+                        "snippets. When a result calls for disambiguation, format the title as 'name (descriptor)' "
+                        "and keep the descriptor concise. Each result must also include a disambiguated slug "
+                        "suitable for use in a URL (lowercase, hyphen-delimited, concise, and unique within the list, "
+                        "and mirroring any parenthetical descriptor). Do not "
                         "provide any other output. When a suggested entry matches one of the catalogue "
                         "records provided in the patron briefing, include its article_id in the tool "
                         "payload; otherwise omit the field."
