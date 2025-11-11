@@ -514,8 +514,25 @@ def get_or_create_article(
         return existing, False
 
     preferred_slug = encyclopedai_slugify(slug_hint or "") if slug_hint else ""
-    if not preferred_slug:
-        preferred_slug = encyclopedai_slugify(cleaned_title)
+    if preferred_slug:
+        existing = Article.objects.filter(slug=preferred_slug).first()
+        if existing:
+            if cleaned_summary and existing.summary_snippet != cleaned_summary:
+                existing.summary_snippet = cleaned_summary
+                existing.save(update_fields=["summary_snippet"])
+            return existing, False
+
+    title_slug = encyclopedai_slugify(cleaned_title)
+    if title_slug:
+        title_has_parentheses = "(" in cleaned_title and ")" in cleaned_title
+        slug_has_parentheses = "(" in title_slug and ")" in title_slug
+        hint_missing_parentheses = bool(preferred_slug) and (
+            "(" not in preferred_slug or ")" not in preferred_slug
+        )
+        if title_has_parentheses and slug_has_parentheses and hint_missing_parentheses:
+            preferred_slug = title_slug
+        elif not preferred_slug:
+            preferred_slug = title_slug
     base_slug = preferred_slug or f"article-{shortuuid.uuid()}"
     existing = Article.objects.filter(slug=base_slug).first()
     if existing:
