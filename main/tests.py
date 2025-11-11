@@ -85,6 +85,21 @@ class ArticleSlugTests(TestCase):
         self.assertEqual(article.slug, "the-sun-(newspaper)")
         mocked_generate_article_content.assert_called_once()
 
+    @mock.patch(
+        "main.services.generate_article_content",
+        return_value="# Heading\n\nBody of the article.",
+    )
+    def test_get_or_create_article_ignores_parenthesis_stripped_slug_hint(
+        self, mocked_generate_article_content
+    ):
+        article, created = services.get_or_create_article(
+            "Flying Dutchman (Legend)", slug_hint="flying-dutchman-legend"
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(article.slug, "flying-dutchman-(legend)")
+        mocked_generate_article_content.assert_called_once()
+
 
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
