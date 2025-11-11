@@ -724,8 +724,10 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
                         "snippets. When a result calls for disambiguation, format the title as 'name (descriptor)' "
                         "and keep the descriptor concise. Each result must also include a disambiguated slug "
                         "suitable for use in a URL (lowercase, hyphen-delimited, concise, and unique within the list, "
-                        "and mirroring any parenthetical descriptor). Do not "
-                        "provide any other output. When a suggested entry matches one of the catalogue "
+                        "and mirroring any parenthetical descriptor). Slugs must be derived directly from the "
+                        "displayed title so any parentheses or descriptors remain intact; e.g., "
+                        "\"Der fliegende Holländer (Wagner Opera)\" becomes \"der-fliegende-hollander-(wagner-opera)\". "
+                        "Do not provide any other output. When a suggested entry matches one of the catalogue "
                         "records provided in the patron briefing, include its article_id in the tool "
                         "payload; otherwise omit the field."
                     ),
