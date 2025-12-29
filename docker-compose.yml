@@ -3,14 +3,13 @@ services:
     image: redis
   db:
     image: postgres:18
-    user: ${UID:-1000}:${UID:-1000}
     stop_signal: SIGINT  # Fast shutdown.
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: password
     volumes:
-      - ./misc/dbdata:/var/lib/postgresql/data:delegated
+      - ./misc/dbdata:/var/lib/postgresql:delegated
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U postgres"]
       timeout: 30s
