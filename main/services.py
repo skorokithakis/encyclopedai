@@ -628,8 +628,11 @@ def _render_snippet_markdown(text: str) -> str:
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
     text = re.sub(r"_(.+?)_", r"<em>\1</em>", text)
 
-    # Render links [text](url)
-    text = re.sub(r"\[([^\]]+)\]\(([^\)]+)\)", r'<a href="\2">\1</a>', text)
+    # Render links [text](url) - the URL pattern handles one level of parentheses
+    # for disambiguated slugs like /entries/mercury-(planet)/.
+    text = re.sub(
+        r"\[([^\]]+)\]\(((?:[^()]+|\([^)]*\))+)\)", r'<a href="\2">\1</a>', text
+    )
 
     # Render inline code `code`
     text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
