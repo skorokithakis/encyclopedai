@@ -17,6 +17,9 @@ from . import services
 from . import utils
 from .models import Article
 
+CACHE_MAX_AGE_SECONDS = 60 * 60 * 24
+CACHE_STALE_SECONDS = 60 * 60
+
 
 def index(request):
     query = request.GET.get("q", "").strip()
@@ -59,7 +62,13 @@ def article_detail(request, slug: str):
             "article": article,
             "rendered_body": rendered_body,
         }
-        return render(request, "article_detail.html", context)
+        response = render(request, "article_detail.html", context)
+        response["Cache-Control"] = (
+            f"public, max-age={CACHE_MAX_AGE_SECONDS}, "
+            f"s-maxage={CACHE_MAX_AGE_SECONDS}, "
+            f"stale-while-revalidate={CACHE_STALE_SECONDS}"
+        )
+        return response
 
     fetch_requested = request.GET.get("fetch") == "1"
     title_hint = (request.GET.get("title") or "").strip()
@@ -134,7 +143,13 @@ def article_detail(request, slug: str):
                 "article": article,
                 "rendered_body": rendered_body,
             }
-            return render(request, "article_detail.html", context)
+            response = render(request, "article_detail.html", context)
+            response["Cache-Control"] = (
+                f"public, max-age={CACHE_MAX_AGE_SECONDS}, "
+                f"s-maxage={CACHE_MAX_AGE_SECONDS}, "
+                f"stale-while-revalidate={CACHE_STALE_SECONDS}"
+            )
+            return response
 
         pending_params = request.GET.copy()
         pending_params.pop("fetch", None)
