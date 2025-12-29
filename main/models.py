@@ -1,10 +1,25 @@
+import re
+
 import shortuuid
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.urls import reverse
 
 from .slugs import encyclopedai_slugify
+
+# Pattern to extract slugs from internal markdown links like [text](/entries/slug).
+_OUTGOING_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(/entries/([^/)#?]+)")
+
+
+def extract_outgoing_links(content: str) -> list[str]:
+    """Extract unique slugs from markdown links pointing to /entries/."""
+    if not content:
+        return []
+    return list(
+        set(match.group(1) for match in _OUTGOING_LINK_PATTERN.finditer(content))
+    )
 
 
 class User(AbstractUser):
@@ -17,6 +32,13 @@ class Article(models.Model):
     slug = models.SlugField(max_length=255, unique=True, editable=False)
     content = models.TextField()
     summary_snippet = models.TextField(blank=True, default="")
+    # Denormalized field storing slugs of articles this article links to, enabling
+    # fast reverse lookups for "what links here" queries via GIN index.
+    outgoing_links = ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -37,6 +59,10 @@ class Article(models.Model):
                 fields=["summary_snippet"],
                 name="article_summary_trgm",
                 opclasses=["gin_trgm_ops"],
+            ),
+            GinIndex(
+                fields=["outgoing_links"],
+                name="article_outgoing_links_gin",
             ),
         ]
 
@@ -117,6 +143,7 @@ class Article(models.Model):
                 index += 1
                 slug_candidate = f"{base_slug}-{index}"
             self.slug = slug_candidate
+        self.outgoing_links = extract_outgoing_links(self.content)
         super().save(*args, **kwargs)
 
 

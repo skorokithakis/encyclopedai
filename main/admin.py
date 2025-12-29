@@ -11,6 +11,6 @@ admin.site.register(User, UserAdmin)
 @admin.register(Article)
 class ArticleAdmin(DjangoQLSearchMixin, admin.ModelAdmin):
     list_display = ["title", "updated_at"]
-    readonly_fields = ["slug", "created_at", "updated_at"]
+    readonly_fields = ["slug", "outgoing_links", "created_at", "updated_at"]
     search_fields = ["title", "content", "summary_snippet"]
     ordering = ["title"]

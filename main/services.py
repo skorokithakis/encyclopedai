@@ -290,9 +290,10 @@ def _collect_incoming_link_briefings(
     if not cleaned_slug:
         return []
 
-    lookup_token = f"/entries/{cleaned_slug}"
+    # Uses the denormalized outgoing_links ArrayField with a GIN index for fast
+    # reverse lookups instead of scanning all article content.
     linking_articles = (
-        Article.objects.filter(content__icontains=lookup_token)
+        Article.objects.filter(outgoing_links__contains=[cleaned_slug])
         .exclude(slug=cleaned_slug)
         .order_by("title")
     )
