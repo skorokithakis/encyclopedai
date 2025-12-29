@@ -266,6 +266,7 @@ def _build_link_prompt(topic: str, article_body: str) -> str:
         "- ALL disambiguation goes in the URL only, never in the visible text.\n"
         "- ALWAYS disambiguate links. Every link URL should include a parenthetical descriptor.\n"
         "- Use lowercase slugs with hyphens, starting with /entries/.\n"
+        "- End each URL with a single trailing slash inside the parentheses, e.g. [text](/entries/slug-(descriptor)/). Do NOT add anything after the closing parenthesis.\n"
         "- Any notable concept, person, place, or invention should be linked.\n"
         '- Do not link references or citations such as "Foucault, 1864".\n'
         "- Keep all existing Markdown structure, math, and tables intact.\n"
