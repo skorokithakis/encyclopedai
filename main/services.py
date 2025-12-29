@@ -34,10 +34,11 @@ logger = logging.getLogger(__name__)
 
 ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
 _ENTRY_LINK_PATTERN = re.compile(
-    r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/[^\s)]+)(\))", flags=re.IGNORECASE
+    r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/(?:[^\s()]+|\([^)]*\))+)(\))",
+    flags=re.IGNORECASE,
 )
 _ENTRY_BARE_LINK_PATTERN = re.compile(
-    r"https?://[^\s)]+(/entries/[^\s)\]]+)", flags=re.IGNORECASE
+    r"https?://[^\s)]+(/entries/(?:[^\s()\]]+|\([^)]*\))+)", flags=re.IGNORECASE
 )
 
 
