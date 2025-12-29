@@ -15,8 +15,8 @@ from urllib.parse import urlencode
 import shortuuid
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db import transaction
-from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import escape
@@ -624,18 +624,21 @@ def _render_snippet_markdown(text: str) -> str:
 
 
 def _locate_relevant_articles(cleaned_query: str, limit: int = 5) -> List[Article]:
-    """Perform a simple full-text style search across the catalogue."""
-
+    """Perform a trigram similarity search across the catalogue."""
     if not cleaned_query:
         return []
 
-    filters = (
-        Q(title__icontains=cleaned_query)
-        | Q(summary_snippet__icontains=cleaned_query)
-        | Q(content__icontains=cleaned_query)
+    return list(
+        Article.objects.annotate(
+            similarity=(
+                TrigramSimilarity("title", cleaned_query)
+                + TrigramSimilarity("summary_snippet", cleaned_query)
+                + TrigramSimilarity("content", cleaned_query)
+            )
+        )
+        .filter(similarity__gt=0.3)
+        .order_by("-similarity")[:limit]
     )
-    matches = Article.objects.filter(filters).order_by("-updated_at", "title")[:limit]
-    return list(matches)
 
 
 def generate_search_results(query: str) -> List[Dict[str, object]]:
@@ -726,7 +729,7 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
                         "suitable for use in a URL (lowercase, hyphen-delimited, concise, and unique within the list, "
                         "and mirroring any parenthetical descriptor). Slugs must be derived directly from the "
                         "displayed title so any parentheses or descriptors remain intact; e.g., "
-                        "\"Der fliegende Holländer (Wagner Opera)\" becomes \"der-fliegende-hollander-(wagner-opera)\". "
+                        '"Der fliegende Holländer (Wagner Opera)" becomes "der-fliegende-hollander-(wagner-opera)". '
                         "Do not provide any other output. When a suggested entry matches one of the catalogue "
                         "records provided in the patron briefing, include its article_id in the tool "
                         "payload; otherwise omit the field."

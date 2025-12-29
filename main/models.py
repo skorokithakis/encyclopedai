@@ -1,5 +1,6 @@
 import shortuuid
 from django.contrib.auth.models import AbstractUser
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.urls import reverse
 
@@ -20,6 +21,23 @@ class Article(models.Model):
 
     class Meta:
         ordering = ["title"]
+        indexes = [
+            GinIndex(
+                fields=["content"],
+                name="article_content_trgm",
+                opclasses=["gin_trgm_ops"],
+            ),
+            GinIndex(
+                fields=["title"],
+                name="article_title_trgm",
+                opclasses=["gin_trgm_ops"],
+            ),
+            GinIndex(
+                fields=["summary_snippet"],
+                name="article_summary_trgm",
+                opclasses=["gin_trgm_ops"],
+            ),
+        ]
 
     def __str__(self):
         return self.title
