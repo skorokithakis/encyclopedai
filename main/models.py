@@ -12,6 +12,7 @@ class User(AbstractUser):
 
 
 class Article(models.Model):
+    id: int
     title = models.CharField(max_length=255)
     slug = models.SlugField(max_length=255, unique=True, editable=False)
     content = models.TextField()

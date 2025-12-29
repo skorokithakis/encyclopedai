@@ -24,6 +24,7 @@ from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.text import Truncator
 from openai import OpenAI
+from openai.types.chat import ChatCompletionToolParam
 
 from .models import Article
 from .models import ArticleCreationLock
@@ -660,7 +661,7 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
                 f"- article_id {article.id}: {article.title} — {_summarize_article_snippet(article)}"
             )
 
-    tools = [
+    tools: list[ChatCompletionToolParam] = [
         {
             "type": "function",
             "function": {

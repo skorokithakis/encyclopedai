@@ -123,10 +123,12 @@ if os.getenv("IN_DOCKER"):
     SESSION_COOKIE_AGE = 365 * 24 * 60 * 60
 elif os.getenv("DATABASE_URL"):
     # Running under Dokku.
-    USER, PASSWORD, HOST, PORT, NAME = re.match(  # type: ignore
+    database_url_match = re.match(
         r"^postgres://(?P<username>.*?)\:(?P<password>.*?)\@(?P<host>.*?)\:(?P<port>\d+)\/(?P<db>.*?)$",
         os.getenv("DATABASE_URL", ""),
-    ).groups()
+    )
+    assert database_url_match, "DATABASE_URL is set but does not match expected format"
+    USER, PASSWORD, HOST, PORT, NAME = database_url_match.groups()
 
     DATABASES = {
         "default": {
@@ -163,10 +165,14 @@ else:
 
 if os.getenv("EMAIL_URL", ""):
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_HOST, EMAIL_PORT = re.match(  # type: ignore
+    email_url_match = re.match(
         r"^email://(?P<username>.*)\:(?P<password>.*?)\@(?P<host>.*?)\:(?P<port>\d+)\/?$",
         os.getenv("EMAIL_URL", ""),
-    ).groups()
+    )
+    assert email_url_match, "EMAIL_URL is set but does not match expected format"
+    EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_HOST, EMAIL_PORT = (
+        email_url_match.groups()
+    )
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
