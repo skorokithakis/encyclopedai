@@ -259,17 +259,27 @@ def _build_link_prompt(topic: str, article_body: str) -> str:
     cleaned_body = (article_body or "").strip()
     return (
         "You serve as the cross-reference editor for a mock encyclopedia. "
-        "Add internal Markdown links to the provided entry while preserving its wording.\n"
-        "- Only adjust the text enough to insert links; do not remove sections or add new commentary.\n"
-        "- Use disambiguated, URL-ready slugs in lowercase with hyphens that begin with /entries/, "
-        "e.g. [gender](/entries/gender/).\n"
-        "- When disambiguation is needed, ensure the visible text reads 'name (descriptor)' and "
-        "the slug keeps that descriptor in parentheses, e.g. "
-        "[sun (star)](/entries/sun-(star)/).\n"
-        "- Any notable concept, person, place, or invention that would warrant its own entry should be linked.\n"
+        "Add internal Markdown links to the provided entry while preserving its wording exactly.\n\n"
+        "CRITICAL RULES:\n"
+        "- NEVER modify the visible link text. The original wording must remain unchanged.\n"
+        "- ALL disambiguation goes in the URL only, never in the visible text.\n"
+        "- ALWAYS disambiguate links. Every link URL should include a parenthetical descriptor.\n"
+        "- Use lowercase slugs with hyphens, starting with /entries/.\n"
+        "- Any notable concept, person, place, or invention should be linked.\n"
         '- Do not link references or citations such as "Foucault, 1864".\n'
-        "- Leave the title off and keep all existing Markdown structure, math, and tables intact.\n"
+        "- Keep all existing Markdown structure, math, and tables intact.\n"
         "- Return only the revised article with the newly added links.\n\n"
+        "EXAMPLES - notice how the visible text never changes, only the URL has disambiguation:\n"
+        '- "the sun is yellow" → "the [sun](/entries/sun-(star)/) is yellow"\n'
+        '- "Newton discovered gravity" → "[Newton](/entries/isaac-newton-(physicist)/) discovered [gravity](/entries/gravity-(force)/)"\n'
+        '- "water boils at 100°C" → "[water](/entries/water-(chemical-compound)/) boils at 100°C"\n'
+        '- "Paris is beautiful" → "[Paris](/entries/paris-(city-in-france)/) is beautiful"\n'
+        '- "the apple fell" → "the [apple](/entries/apple-(fruit)/) fell"\n'
+        '- "Mercury is closest to the sun" → "[Mercury](/entries/mercury-(planet)/) is closest to the [sun](/entries/sun-(star)/)"\n'
+        '- "Darwin proposed evolution" → "[Darwin](/entries/charles-darwin-(naturalist)/) proposed [evolution](/entries/evolution-(biology)/)"\n'
+        '- "iron is magnetic" → "[iron](/entries/iron-(chemical-element)/) is magnetic"\n'
+        '- "the Renaissance began in Italy" → "the [Renaissance](/entries/renaissance-(cultural-movement)/) began in [Italy](/entries/italy-(country)/)"\n'
+        '- "cells divide by mitosis" → "[cells](/entries/cell-(biology)/) divide by [mitosis](/entries/mitosis-(cell-division)/)"\n\n'
         f"Entry title: {cleaned_title}\n"
         "Article draft:\n"
         f"{cleaned_body}"
