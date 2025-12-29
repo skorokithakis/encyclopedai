@@ -13,7 +13,6 @@ def populate_outgoing_links(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("main", "0006_article_article_title_trgm_and_more"),
     ]
