@@ -10,7 +10,9 @@ from django.urls import reverse
 from .slugs import encyclopedai_slugify
 
 # Pattern to extract slugs from internal markdown links like [text](/entries/slug).
-_OUTGOING_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(/entries/([^/)#?]+)")
+# Handles parentheses in slugs (e.g., "gauge-symmetry-(physics)") by matching either
+# non-special characters or balanced parenthetical groups.
+_OUTGOING_LINK_PATTERN = re.compile(r"\[[^\]]+\]\(/entries/((?:[^/)#?(]+|\([^)]*\))+)")
 
 
 def extract_outgoing_links(content: str) -> list[str]:
