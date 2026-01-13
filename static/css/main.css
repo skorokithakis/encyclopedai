@@ -611,6 +611,12 @@ body {
     padding-left: 0;
 }
 
+/* Common styles for TOC item numbers */
+.toc__item::before {
+    font-weight: bold;
+    color: #54595d;
+}
+
 /* Level 2 (h2): decimal numbers */
 .toc__item--level-2 {
     counter-increment: toc-level-2;
@@ -619,8 +625,6 @@ body {
 
 .toc__item--level-2::before {
     content: counter(toc-level-2) ". ";
-    font-weight: bold;
-    color: #54595d;
 }
 
 /* Level 3 (h3): lower-roman numerals */
@@ -632,8 +636,6 @@ body {
 
 .toc__item--level-3::before {
     content: counter(toc-level-3, lower-roman) ". ";
-    font-weight: bold;
-    color: #54595d;
 }
 
 /* Level 4 (h4): lower-alpha letters */
@@ -645,8 +647,6 @@ body {
 
 .toc__item--level-4::before {
     content: counter(toc-level-4, lower-alpha) ". ";
-    font-weight: bold;
-    color: #54595d;
 }
 
 /* Level 5 (h5): upper-roman numerals */
@@ -658,8 +658,6 @@ body {
 
 .toc__item--level-5::before {
     content: counter(toc-level-5, upper-roman) ". ";
-    font-weight: bold;
-    color: #54595d;
 }
 
 /* Level 6 (h6): upper-alpha letters */
@@ -670,8 +668,6 @@ body {
 
 .toc__item--level-6::before {
     content: counter(toc-level-6, upper-alpha) ". ";
-    font-weight: bold;
-    color: #54595d;
 }
 
 .toc__link {
