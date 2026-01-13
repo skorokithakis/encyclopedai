@@ -603,6 +603,7 @@ body {
     margin: 0;
     padding: 0.5rem 0.75rem;
     list-style: none;
+    counter-reset: toc-h2 toc-h3 toc-h4 toc-h5 toc-h6;
 }
 
 .toc__item {
@@ -610,20 +611,64 @@ body {
     padding-left: 0;
 }
 
+/* Reset nested counters when a parent level appears */
+.toc__item--level-2 {
+    counter-increment: toc-h2;
+    counter-reset: toc-h3 toc-h4 toc-h5 toc-h6;
+}
+
 .toc__item--level-3 {
     padding-left: 1.5rem;
+    counter-increment: toc-h3;
+    counter-reset: toc-h4 toc-h5 toc-h6;
 }
 
 .toc__item--level-4 {
     padding-left: 2.5rem;
+    counter-increment: toc-h4;
+    counter-reset: toc-h5 toc-h6;
 }
 
 .toc__item--level-5 {
     padding-left: 3.5rem;
+    counter-increment: toc-h5;
+    counter-reset: toc-h6;
 }
 
 .toc__item--level-6 {
     padding-left: 4.5rem;
+    counter-increment: toc-h6;
+}
+
+/* Add numbering before the link text */
+.toc__item--level-2 .toc__link::before {
+    content: counter(toc-h2) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+.toc__item--level-3 .toc__link::before {
+    content: counter(toc-h3, lower-roman) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+.toc__item--level-4 .toc__link::before {
+    content: counter(toc-h4, lower-alpha) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+.toc__item--level-5 .toc__link::before {
+    content: counter(toc-h5, decimal) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+.toc__item--level-6 .toc__link::before {
+    content: counter(toc-h6, lower-alpha) ". ";
+    font-weight: bold;
+    color: #54595d;
 }
 
 .toc__link {
@@ -638,11 +683,6 @@ body {
 .toc__link:hover {
     background: #e8eaed;
     text-decoration: underline;
-}
-
-.toc__number {
-    font-weight: bold;
-    color: #54595d;
 }
 
 .toc__text {
