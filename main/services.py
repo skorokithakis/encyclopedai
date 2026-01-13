@@ -13,6 +13,7 @@ from typing import Tuple
 from urllib.parse import urlencode
 
 import shortuuid
+from bs4 import BeautifulSoup
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.postgres.search import TrigramSimilarity
@@ -871,7 +872,12 @@ def render_article_markdown(markdown_text: str) -> str:
     if md is None:
         safe_text = escape(markdown_text)
         paragraphs = safe_text.split("\n\n")
-        wrapped = "".join(f"<p>{para.replace('\n', '<br>')}</p>" for para in paragraphs)
+        newline_replacement = "\n"
+        br_replacement = "<br>"
+        wrapped = "".join(
+            f"<p>{para.replace(newline_replacement, br_replacement)}</p>"
+            for para in paragraphs
+        )
         return mark_safe(wrapped)
 
     markdown_module = cast(Any, md)
@@ -887,3 +893,66 @@ def render_article_markdown(markdown_text: str) -> str:
             renderer.inlinePatterns.deregister(pattern_name)
     html = renderer.convert(markdown_text)
     return mark_safe(html)
+
+
+def _slugify_heading(text: str) -> str:
+    """
+    Create a URL-friendly slug from heading text.
+
+    Converts to lowercase, replaces spaces with hyphens, and removes special characters.
+    """
+    cleaned = text.lower().strip()
+    cleaned = re.sub(r"[^\w\s-]", "", cleaned)
+    cleaned = re.sub(r"[-\s]+", "-", cleaned)
+    return cleaned
+
+
+def extract_toc_and_annotate_headings(
+    markdown_content: str,
+) -> Tuple[str, List[Dict[str, object]]]:
+    """
+    Render markdown to HTML and extract a table of contents from H2-H6 headings.
+
+    Adds unique id attributes to headings and returns both the annotated HTML
+    and a structured list of TOC entries.
+
+    Args:
+        markdown_content: The raw markdown article content.
+
+    Returns:
+        A tuple of (annotated HTML, TOC list). The TOC list contains dictionaries
+        with 'title', 'id', and 'level' keys. Returns empty TOC list if fewer
+        than 3 headings are found.
+    """
+    rendered_html = render_article_markdown(markdown_content)
+    soup = BeautifulSoup(rendered_html, "html.parser")
+
+    headings = soup.find_all(["h2", "h3", "h4", "h5", "h6"])
+
+    if len(headings) < 3:
+        return mark_safe(rendered_html), []
+
+    toc: List[Dict[str, object]] = []
+    slug_counts: Dict[str, int] = {}
+
+    for heading in headings:
+        title_text = heading.get_text().strip()
+        if not title_text:
+            continue
+
+        level = int(heading.name[1])
+
+        base_slug = _slugify_heading(title_text)
+        slug_counts[base_slug] = slug_counts.get(base_slug, 0) + 1
+
+        if slug_counts[base_slug] > 1:
+            slug_id = f"{base_slug}-{slug_counts[base_slug]}"
+        else:
+            slug_id = base_slug
+
+        heading["id"] = slug_id
+
+        toc.append({"title": title_text, "id": slug_id, "level": level})
+
+    annotated_html = str(soup)
+    return mark_safe(annotated_html), toc

@@ -57,10 +57,13 @@ def index(request):
 def article_detail(request, slug: str):
     article = Article.objects.filter(slug=slug).first()
     if article:
-        rendered_body = services.render_article_markdown(article.content)
+        rendered_body, table_of_contents = services.extract_toc_and_annotate_headings(
+            article.content
+        )
         context = {
             "article": article,
             "rendered_body": rendered_body,
+            "table_of_contents": table_of_contents,
         }
         response = render(request, "article_detail.html", context)
         response["Cache-Control"] = (
@@ -138,10 +141,13 @@ def article_detail(request, slug: str):
                 ):
                     article.summary_snippet = summary_text
                     article.save(update_fields=["summary_snippet"])
-            rendered_body = services.render_article_markdown(article.content)
+            rendered_body, table_of_contents = (
+                services.extract_toc_and_annotate_headings(article.content)
+            )
             context = {
                 "article": article,
                 "rendered_body": rendered_body,
+                "table_of_contents": table_of_contents,
             }
             response = render(request, "article_detail.html", context)
             response["Cache-Control"] = (

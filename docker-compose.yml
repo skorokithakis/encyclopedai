@@ -39,6 +39,7 @@ services:
         condition: service_started
     environment:
       IN_DOCKER: 1
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
   webserver:
     image: jumanjiman/caddy
     depends_on:

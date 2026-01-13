@@ -85,6 +85,22 @@
                 </form>
             </section>
             {% endif %}
+
+            {% if table_of_contents %}
+            <section class="toc-container">
+                <h3 class="toc__title">Contents</h3>
+                <ul class="toc__list">
+                    {% for item in table_of_contents %}
+                    <li class="toc__item toc__item--level-{{ item.level }}">
+                        <a href="#{{ item.id }}" class="toc__link">
+                            <span class="toc__number">{{ forloop.counter }}. </span>
+                            <span class="toc__text">{{ item.title }}</span>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endif %}
         </aside>
     </div>
 </main>

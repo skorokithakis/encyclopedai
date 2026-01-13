@@ -582,6 +582,77 @@ body {
     border-color: #cb2431;
 }
 
+.toc-container {
+    margin-top: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #a2a9b1;
+    padding: 0;
+}
+
+.toc__title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: bold;
+    text-align: center;
+    background: #cccccc;
+    padding: 0.4rem 0.5rem;
+    color: #000000;
+}
+
+.toc__list {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    list-style: none;
+}
+
+.toc__item {
+    margin: 0.25rem 0;
+    padding-left: 0;
+}
+
+.toc__item--level-3 {
+    padding-left: 1.5rem;
+}
+
+.toc__item--level-4 {
+    padding-left: 2.5rem;
+}
+
+.toc__item--level-5 {
+    padding-left: 3.5rem;
+}
+
+.toc__item--level-6 {
+    padding-left: 4.5rem;
+}
+
+.toc__link {
+    display: block;
+    color: #0645ad;
+    text-decoration: none;
+    font-size: 0.85rem;
+    transition: background-color 0.15s ease;
+    border-radius: 0.15rem;
+}
+
+.toc__link:hover {
+    background: #e8eaed;
+    text-decoration: underline;
+}
+
+.toc__number {
+    font-weight: bold;
+    color: #54595d;
+}
+
+.toc__text {
+    color: #202122;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
 @media (max-width: 960px) {
     .page-columns {
         flex-direction: column;

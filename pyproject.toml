@@ -9,6 +9,7 @@ dependencies = [
     "django-extensions",
     "django-redis",
     "markdown",
+    "beautifulsoup4",
     "psycopg2-binary",
     "pytest",
     "pytest-cov",
