@@ -934,6 +934,7 @@ def extract_toc_and_annotate_headings(
 
     toc: List[Dict[str, object]] = []
     slug_counts: Dict[str, int] = {}
+    level_counters: Dict[int, int] = {2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
 
     for heading in headings:
         title_text = heading.get_text().strip()
@@ -952,7 +953,25 @@ def extract_toc_and_annotate_headings(
 
         heading["id"] = slug_id
 
-        toc.append({"title": title_text, "id": slug_id, "level": level})
+        level_counters[level] += 1
+
+        for lvl in range(level + 1, 7):
+            level_counters[lvl] = 0
+
+        hierarchical_number = ".".join(
+            str(level_counters[lvl])
+            for lvl in range(2, level + 1)
+            if level_counters[lvl] > 0
+        )
+
+        toc.append(
+            {
+                "title": title_text,
+                "id": slug_id,
+                "level": level,
+                "number": hierarchical_number,
+            }
+        )
 
     annotated_html = str(soup)
     return mark_safe(annotated_html), toc
