@@ -587,6 +587,7 @@ body {
     background: #f8f9fa;
     border: 1px solid #a2a9b1;
     padding: 0;
+    counter-reset: toc-level-2 toc-level-3 toc-level-4 toc-level-5 toc-level-6;
 }
 
 .toc__title {
@@ -610,20 +611,67 @@ body {
     padding-left: 0;
 }
 
+/* Level 2 (h2): decimal numbers */
+.toc__item--level-2 {
+    counter-increment: toc-level-2;
+    counter-reset: toc-level-3 toc-level-4 toc-level-5 toc-level-6;
+}
+
+.toc__item--level-2::before {
+    content: counter(toc-level-2) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+/* Level 3 (h3): lower-roman numerals */
 .toc__item--level-3 {
     padding-left: 1.5rem;
+    counter-increment: toc-level-3;
+    counter-reset: toc-level-4 toc-level-5 toc-level-6;
 }
 
+.toc__item--level-3::before {
+    content: counter(toc-level-3, lower-roman) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+/* Level 4 (h4): lower-alpha letters */
 .toc__item--level-4 {
     padding-left: 2.5rem;
+    counter-increment: toc-level-4;
+    counter-reset: toc-level-5 toc-level-6;
 }
 
+.toc__item--level-4::before {
+    content: counter(toc-level-4, lower-alpha) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+/* Level 5 (h5): upper-roman numerals */
 .toc__item--level-5 {
     padding-left: 3.5rem;
+    counter-increment: toc-level-5;
+    counter-reset: toc-level-6;
 }
 
+.toc__item--level-5::before {
+    content: counter(toc-level-5, upper-roman) ". ";
+    font-weight: bold;
+    color: #54595d;
+}
+
+/* Level 6 (h6): upper-alpha letters */
 .toc__item--level-6 {
     padding-left: 4.5rem;
+    counter-increment: toc-level-6;
+}
+
+.toc__item--level-6::before {
+    content: counter(toc-level-6, upper-alpha) ". ";
+    font-weight: bold;
+    color: #54595d;
 }
 
 .toc__link {
@@ -638,11 +686,6 @@ body {
 .toc__link:hover {
     background: #e8eaed;
     text-decoration: underline;
-}
-
-.toc__number {
-    font-weight: bold;
-    color: #54595d;
 }
 
 .toc__text {
