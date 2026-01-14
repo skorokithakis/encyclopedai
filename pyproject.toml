@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 requires-python = ">=3.13"
 dependencies = [
-    "django>=2.2",
+    "django==5.2.7",
     "djangoql",
     "django-extensions",
     "django-redis",
@@ -13,7 +13,8 @@ dependencies = [
     "psycopg2-binary",
     "pytest",
     "pytest-cov",
-    "sentry-sdk",
+    "pytest-django",
+    "sentry-sdk==2.49.0",
     "shortuuid",
     "unittest-xml-reporting",
     "uwsgi",
@@ -42,3 +43,8 @@ lint.ignore = ["F403", "E501", "N802", "N803", "N806", "C901", "D100", "D102", "
 venvPath = "."
 venv = ".venv"
 exclude = ["**/migrations/**"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "encyclopedai.settings"
+python_classes = "*Tests"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]

@@ -11,6 +11,12 @@ from . import services
 from .models import Article
 from .models import ArticleCreationLock
 
+WHITELISTED_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/17.1 Safari/605.1.15"
+)
+
 
 @override_settings(
     STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage",
@@ -154,6 +160,7 @@ class ArticleDetailTests(TestCase):
         response = self.client.get(
             reverse("main:article-detail", kwargs={"slug": slug}),
             {"fetch": "1", "title": "New Entry"},
+            HTTP_USER_AGENT=WHITELISTED_USER_AGENT,
         )
 
         self.assertEqual(response.status_code, 200)
@@ -245,6 +252,7 @@ class ArticleCreationLockingTests(TestCase):
         response = self.client.get(
             reverse("main:article-detail", kwargs={"slug": "waiting-entry"}),
             {"fetch": "1"},
+            HTTP_USER_AGENT=WHITELISTED_USER_AGENT,
         )
 
         self.assertEqual(response.status_code, 202)
