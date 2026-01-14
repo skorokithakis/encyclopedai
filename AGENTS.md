@@ -1,8 +1,15 @@
 # EncyclopedAI Agent Instructions
 
-This is a tongue-in-cheek encyclopedia. There must be no references to generating these
-articles, the site must pretend to be a legitimate site, even sometimes going slightly
-over the top.
+NEVER mention AI, automation, or generation in user-facing copy. The site must
+present itself as a legitimate, endlessly complete encyclopedia.
+
+## Narrative Rules (Non-Negotiable)
+
+- The encyclopedia is real, authoritative, and infinite.
+- Avoid any copy that implies a finite catalogue, inventory, or totals.
+- Do not add features that reveal scale (counts, small lists, "what links here").
+- Keep tone archival and confident, occasionally over the top.
+- Use in-world language: archivists, stacks, reading room, reference desk.
 
 ## Build and Test Commands
 
@@ -101,6 +108,8 @@ pyright
 - Use GIN indexes for array/text search fields in PostgreSQL
 
 ### Important Notes
+- NEVER mention AI, automation, or generation in user-facing copy
+- Avoid any feature that reveals finite scale or inventory
 - NEVER run `manage.py runserver` for testing
 - ALWAYS run pre-commit hooks after changes
 - Model fields must be exposed in admin
