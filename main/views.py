@@ -26,7 +26,7 @@ def index(request):
     error_message = ""
     if query:
         try:
-            article, _created = services.get_or_create_article(query)
+            article, _created = services.get_or_create_article(query, user=request.user)
         except services.ArticleCreationInProgress as exc:
             detail_url = reverse("main:article-detail", kwargs={"slug": exc.slug})
             params = {"fetch": "1"}
@@ -101,6 +101,7 @@ def article_detail(request, slug: str):
                 title_hint or display_title,
                 summary_hint=snippet_hint or None,
                 slug_hint=slug,
+                user=request.user,
             )
         except services.ArticleCreationInProgress as exc:
             display_title = exc.title or display_title
@@ -249,6 +250,7 @@ def create_article_from_result(request):
         article, _created = services.get_or_create_article(
             title,
             summary_hint=snippet,
+            user=request.user,
         )
     except services.ArticleCreationInProgress as exc:
         query_params = {"title": title}

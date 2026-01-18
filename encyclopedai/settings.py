@@ -210,8 +210,8 @@ GEMINI_API_BASE = os.getenv(
     "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta/openai/"
 )
 
-# Daily article creation limit to control LLM API costs.
-DAILY_ARTICLE_LIMIT = int(os.getenv("DAILY_ARTICLE_LIMIT", "2000"))
+# Daily article creation limit for anonymous users. Logged-in users are exempt.
+DAILY_ARTICLE_LIMIT = int(os.getenv("DAILY_ARTICLE_LIMIT", "500"))
 
 SITE_ID = 1
 

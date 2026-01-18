@@ -10,6 +10,7 @@ from typing import cast
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import TYPE_CHECKING
 from urllib.parse import urlencode
 
 import shortuuid
@@ -30,6 +31,9 @@ from openai.types.chat import ChatCompletionToolParam
 from .models import Article
 from .models import ArticleCreationLock
 from .slugs import encyclopedai_slugify
+
+if TYPE_CHECKING:
+    from .models import User as UserModel
 
 logger = logging.getLogger(__name__)
 
@@ -56,12 +60,12 @@ class ArticleCreationInProgress(Exception):
 
 class DailyArticleLimitExceeded(Exception):
     """
-    Raised when the daily article creation limit has been reached.
+    Raised when the daily article creation limit has been reached for anonymous users.
     """
 
     def __init__(self):
         super().__init__(
-            "We're sorry, our archivists are currently off the clock. Please come back tomorrow."
+            "The reference desk is at capacity. Please sign in as a registered patron to continue accessing new entries."
         )
 
 
@@ -501,10 +505,15 @@ def generate_article_summary(title: str, article_body: str) -> str:
     return summary
 
 
-def enforce_daily_article_limit() -> None:
+def enforce_daily_article_limit(user: "UserModel | None" = None) -> None:
     """
-    Raise an error if the daily article creation limit has been exhausted.
+    Raise an error if the daily article creation limit has been exhausted for anonymous users.
+
+    Logged-in users are exempt from the daily limit.
     """
+    if user and user.is_authenticated:
+        return
+
     articles_created_today = Article.objects.filter(
         created_at__date=timezone.now().date()
     ).count()
@@ -513,7 +522,10 @@ def enforce_daily_article_limit() -> None:
 
 
 def get_or_create_article(
-    topic: str, summary_hint: str | None = None, slug_hint: str | None = None
+    topic: str,
+    summary_hint: str | None = None,
+    slug_hint: str | None = None,
+    user: "UserModel | None" = None,
 ) -> Tuple[Article, bool]:
     cleaned_title = topic.strip()
     if not cleaned_title:
@@ -556,7 +568,7 @@ def get_or_create_article(
             existing.save(update_fields=["summary_snippet"])
         return existing, False
 
-    enforce_daily_article_limit()
+    enforce_daily_article_limit(user)
 
     lock_token = _acquire_article_creation_lock(base_slug, cleaned_title)
     try:

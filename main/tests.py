@@ -287,3 +287,29 @@ class ArticleCreationLockingTests(TestCase):
         self.assertTrue(payload.get("pending"))
         self.assertIn("url", payload)
         self.assertIn("search-entry", payload.get("url", ""))
+
+
+@override_settings(DAILY_ARTICLE_LIMIT=2)
+class DailyArticleLimitTests(TestCase):
+    def test_enforce_daily_article_limit_allows_anonymous_users_below_limit(self):
+        """Anonymous users can create articles below the daily limit."""
+        Article.objects.create(title="First Article", content="Content")
+        services.enforce_daily_article_limit(None)
+
+    def test_enforce_daily_article_limit_blocks_anonymous_users_at_limit(self):
+        """Anonymous users are blocked when the daily limit is reached."""
+        Article.objects.create(title="First Article", content="Content")
+        Article.objects.create(title="Second Article", content="Content")
+        with self.assertRaises(services.DailyArticleLimitExceeded):
+            services.enforce_daily_article_limit(None)
+
+    def test_enforce_daily_article_limit_allows_authenticated_users(self):
+        """Authenticated users are exempt from the daily limit."""
+        from .models import User
+
+        user = User.objects.create_user(username="testuser")
+        Article.objects.create(title="First Article", content="Content")
+        Article.objects.create(title="Second Article", content="Content")
+        Article.objects.create(title="Third Article", content="Content")
+
+        services.enforce_daily_article_limit(user)
