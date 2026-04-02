@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
 _ENTRY_LINK_PATTERN = re.compile(
-    r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/(?:[^\s()]+|\([^)]*\))+)(\))",
+    r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/(?>(?:[^\s()]+|\([^)]*\))+))(\))",
     flags=re.IGNORECASE,
 )
 _ENTRY_BARE_LINK_PATTERN = re.compile(
@@ -642,9 +642,11 @@ def _render_snippet_markdown(text: str) -> str:
     text = re.sub(r"_(.+?)_", r"<em>\1</em>", text)
 
     # Render links [text](url) - the URL pattern handles one level of parentheses
-    # for disambiguated slugs like /entries/mercury-(planet)/.
+    # for disambiguated slugs like /entries/mercury-(planet)/. The atomic group
+    # (?>...) prevents catastrophic backtracking when input contains unterminated
+    # markdown links (e.g. from text truncation).
     text = re.sub(
-        r"\[([^\]]+)\]\(((?:[^()]+|\([^)]*\))+)\)", r'<a href="\2">\1</a>', text
+        r"\[([^\]]+)\]\((?>((?:[^()]+|\([^)]*\))+))\)", r'<a href="\2">\1</a>', text
     )
 
     # Render inline code `code`
