@@ -660,12 +660,14 @@ def _locate_relevant_articles(cleaned_query: str, limit: int = 5) -> List[Articl
     if not cleaned_query:
         return []
 
+    # Trigram similarity over the full `content` field forces a sequential scan
+    # that computes trigrams over every article body, which doesn't scale. Title
+    # and summary are short and almost always carry the topic, so rank on those.
     return list(
         Article.objects.annotate(
             similarity=(
                 TrigramSimilarity("title", cleaned_query)
                 + TrigramSimilarity("summary_snippet", cleaned_query)
-                + TrigramSimilarity("content", cleaned_query)
             )
         )
         .filter(similarity__gt=0.3)
