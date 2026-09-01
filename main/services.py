@@ -37,6 +37,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Model call failures are logged at WARNING, not ERROR. The Sentry logging
+# integration turns ERROR records into events, so a rejected upstream API key
+# produces one event per page view and exhausts the quota. Callers still raise
+# RuntimeError, and the views still render the degraded page.
+
 ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
 _ENTRY_LINK_PATTERN = re.compile(
     r"(\[[^\]]+\]\()https?://[^)\s]*?(/entries/(?>(?:[^\s()]+|\([^)]*\))+))(\))",
@@ -419,7 +424,7 @@ def generate_article_content(
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Gemini draft request for %s failed", topic)
+        logger.warning("Gemini draft request for %s failed", topic, exc_info=True)
         raise RuntimeError("Failed to generate article content.") from exc
 
     draft_body = "\n\n".join(_extract_text_blocks(draft_response)).strip()
@@ -446,7 +451,7 @@ def generate_article_content(
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Gemini link enrichment for %s failed", topic)
+        logger.warning("Gemini link enrichment for %s failed", topic, exc_info=True)
         raise RuntimeError("Failed to generate article content.") from exc
 
     linked_body = "\n\n".join(_extract_text_blocks(link_response)).strip()
@@ -494,7 +499,7 @@ def generate_article_summary(title: str, article_body: str) -> str:
             ],
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Gemini summary request for %s failed", title)
+        logger.warning("Gemini summary request for %s failed", title, exc_info=True)
         raise RuntimeError("Failed to generate article summary.") from exc
 
     summary_blocks = _extract_text_blocks(response)
@@ -786,7 +791,9 @@ def generate_search_results(query: str) -> List[Dict[str, object]]:
             },
         )
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.exception("Gemini search request for %s failed", cleaned_query)
+        logger.warning(
+            "Gemini search request for %s failed", cleaned_query, exc_info=True
+        )
         raise RuntimeError("Failed to generate search results.") from exc
 
     for choice in getattr(response, "choices", []):
