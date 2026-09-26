@@ -40,7 +40,8 @@ logger = logging.getLogger(__name__)
 # Model call failures are logged at WARNING, not ERROR. The Sentry logging
 # integration turns ERROR records into events, so a rejected upstream API key
 # produces one event per page view and exhausts the quota. Callers still raise
-# RuntimeError, and the views still render the degraded page.
+# RuntimeError, and the views still render the degraded page. The Sentry OpenAI
+# integration reports the same failures on its own, so settings.py disables it.
 
 ARTICLE_CREATION_LOCK_TTL = timedelta(minutes=5)
 _ENTRY_LINK_PATTERN = re.compile(

@@ -16,6 +16,7 @@ from pathlib import Path
 
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.openai import OpenAIIntegration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -220,6 +221,10 @@ sentry_sdk.init(
     traces_sample_rate=0.02,
     environment=ENVIRONMENT,
     integrations=[DjangoIntegration()],
+    # The OpenAI integration auto-enables and reports every failed model call as
+    # an unhandled event. The upstream key is rejected on purpose, so this floods
+    # Sentry once per page view. See the note near the top of main/services.py.
+    disabled_integrations=[OpenAIIntegration()],
 )
 
 TEST_RUNNER = "xmlrunner.extra.djangotestrunner.XMLTestRunner"
